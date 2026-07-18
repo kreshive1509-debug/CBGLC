@@ -1,0 +1,8 @@
+# robots.txt for Chandra Bhanu Gupta Law College
+User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /admin/*
+Disallow: /api/
+
+Sitemap: https://cbglawcollege.in/sitemap.xml
