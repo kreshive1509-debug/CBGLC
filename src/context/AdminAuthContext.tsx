@@ -47,7 +47,6 @@ if (hasConfig) {
   try {
     const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
     auth = getAuth(app);
-    console.log('ℹ️ Firebase initialized with Project ID:', firebaseConfig.projectId);
   } catch (err) {
     console.error('Failed to initialize client-side Firebase Auth:', err);
   }

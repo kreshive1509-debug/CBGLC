@@ -6,7 +6,7 @@ let adminApp: any = null;
 export const initFirebase = () => {
   if (isFirebaseInitialized) return true;
 
-  const projectId = process.env.FIREBASE_PROJECT_ID || process.env.VITE_FIREBASE_PROJECT_ID;
+  const projectId = process.env.FIREBASE_PROJECT_ID;
 
   if (!projectId) {
     console.warn('⚠️ FIREBASE_PROJECT_ID is not set. Firebase Admin cannot be fully initialized. API token verification will run in development simulation mode.');
@@ -31,7 +31,7 @@ export const initFirebase = () => {
     console.log('✅ Firebase Admin initialized successfully.');
     return true;
   } catch (error) {
-    console.warn('⚠️ Firebase Admin initialization failed:', error instanceof Error ? error.message : error);
+    console.warn('Firebase Admin initialization failed');
     return false;
   }
 };

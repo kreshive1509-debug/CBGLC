@@ -1,11 +1,11 @@
 {
-  "projectId": "halogen-mason-ln56p",
-  "appId": "1:313834281563:web:94e948ee9e48b376847d7e",
-  "apiKey": "AIzaSyC7GDvq4CmHCCdNFZIo5R_Doid7i-yXUNQ",
-  "authDomain": "halogen-mason-ln56p.firebaseapp.com",
-  "storageBucket": "halogen-mason-ln56p.firebasestorage.app",
-  "messagingSenderId": "313834281563",
+  "projectId": "<project-id>",
+  "appId": "<firebase-app-id>",
+  "apiKey": "<firebase-web-api-key>",
+  "authDomain": "<project-id>.firebaseapp.com",
+  "storageBucket": "<project-id>.firebasestorage.app",
+  "messagingSenderId": "<sender-id>",
   "measurementId": "",
-  "oAuthClientId": "313834281563-0fasdbu9m3hsbi0e58tbr55kk1k0nkqt.apps.googleusercontent.com",
+  "oAuthClientId": "<oauth-client-id>",
   "recaptchaSiteKey": ""
 }

@@ -48,7 +48,7 @@ export const createEnquiry = async (req: Request, res: Response) => {
             now.toISOString()
         ]);
     } catch (e) {
-        console.error('Google Sheet Error:', e);
+        console.error('Google Sheets integration failed');
     }
 
     // 2. Email Notification
@@ -83,7 +83,7 @@ export const createEnquiry = async (req: Request, res: Response) => {
                 `
             });
         } catch (e) {
-            console.error('SMTP Error:', e);
+            console.error('SMTP notification failed');
         }
     } else {
         console.warn('SMTP not configured. Skipping email notification for admission enquiry.');

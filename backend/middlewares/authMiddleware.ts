@@ -45,7 +45,7 @@ export const verifyFirebaseToken = async (
     }
 
     if (!admin) {
-      res.status(500).json({ error: 'Server Error: Firebase Admin is not initialized and simulation token not provided' });
+      res.status(503).json({ error: 'Authentication service is unavailable' });
       return;
     }
 
@@ -55,11 +55,11 @@ export const verifyFirebaseToken = async (
       req.user = decodedToken;
       next();
     } catch (authError: any) {
-      console.error('Firebase token verification failed:', authError.message);
-      res.status(401).json({ error: 'Unauthorized: Invalid Firebase ID Token', details: authError.message });
+      console.error('Firebase token verification failed');
+      res.status(401).json({ error: 'Unauthorized: Invalid Firebase ID Token' });
     }
   } catch (error: any) {
-    console.error('Auth middleware error:', error);
+    console.error('Auth middleware error');
     res.status(500).json({ error: 'Internal Server Error in Auth Middleware' });
   }
 };
