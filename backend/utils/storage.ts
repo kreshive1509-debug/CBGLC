@@ -8,8 +8,12 @@ import Manager from '../models/Manager';
 import Settings from '../models/Settings';
 import AdmissionSettings from '../models/AdmissionSettings';
 import AdmissionEnquiry from '../models/AdmissionEnquiry';
+import GalleryImage from '../models/GalleryImage';
+import Leader from '../models/Leader';
 
 const Notice = _Notice as any;
+const GalleryImageModel: any = GalleryImage;
+const LeaderModel: any = Leader;
 
 const LOCAL_DB_PATH = path.join(process.cwd(), 'backend', 'data', 'db.json');
 
@@ -17,7 +21,7 @@ const LOCAL_DB_PATH = path.join(process.cwd(), 'backend', 'data', 'db.json');
 const readLocalDB = () => {
   try {
     if (!fs.existsSync(LOCAL_DB_PATH)) {
-      return { settings: {}, founder: {}, manager: {}, notices: [], admissionSettings: {} };
+      return { settings: {}, founder: {}, manager: {}, notices: [], galleryImages: [], leaders: [], admissionSettings: {}, enquiries: [] };
     }
     const data = fs.readFileSync(LOCAL_DB_PATH, 'utf-8');
     const parsed = JSON.parse(data);
@@ -30,13 +34,19 @@ const readLocalDB = () => {
             breakingNewsText: parsed.settings?.breakingNewsText || 'Admissions Open'
         };
     }
+    if (!parsed.galleryImages) {
+        parsed.galleryImages = [];
+    }
+    if (!parsed.leaders) {
+        parsed.leaders = [];
+    }
     if (!parsed.enquiries) {
         parsed.enquiries = [];
     }
     return parsed;
   } catch (err) {
     console.error('Error reading local JSON database:', err);
-    return { settings: {}, founder: {}, manager: {}, notices: [], admissionSettings: {}, enquiries: [] };
+    return { settings: {}, founder: {}, manager: {}, notices: [], galleryImages: [], leaders: [], admissionSettings: {}, enquiries: [] };
   }
 };
 
@@ -241,6 +251,280 @@ export const storage = {
       return newNotice;
     }
   },
+
+  // --- GALLERY ---
+  async getGalleryImages(filters: { category?: string; search?: string; visible?: boolean } = {}) {
+    if (isMongoConnected()) {
+      const query: any = {};
+      if (filters.category) query.category = filters.category;
+      if (typeof filters.visible === 'boolean') query.visible = filters.visible;
+      if (filters.search) {
+        query.$or = [
+          { title: { $regex: filters.search, $options: 'i' } },
+          { category: { $regex: filters.search, $options: 'i' } }
+        ];
+      }
+      return await GalleryImage.find(query).sort({ displayOrder: 1, createdAt: -1 });
+    } else {
+      const db = readLocalDB();
+      let items = db.galleryImages || [];
+      if (filters.category) {
+        items = items.filter((item: any) => item.category.toLowerCase() === filters.category!.toLowerCase());
+      }
+      if (typeof filters.visible === 'boolean') {
+        items = items.filter((item: any) => item.visible === filters.visible);
+      }
+      if (filters.search) {
+        const term = filters.search.toLowerCase();
+        items = items.filter((item: any) =>
+          item.title.toLowerCase().includes(term) || item.category.toLowerCase().includes(term)
+        );
+      }
+      return items.sort((a: any, b: any) => a.displayOrder - b.displayOrder || new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    }
+  },
+
+  async getGalleryImageById(id: string) {
+    if (isMongoConnected()) {
+      if (!mongoose.Types.ObjectId.isValid(id)) return null;
+      return await GalleryImageModel.findById(id).exec();
+    } else {
+      const db = readLocalDB();
+      return db.galleryImages.find((img: any) => img._id === id) || null;
+    }
+  },
+
+  async findGalleryImageByUrl(url: string) {
+    if (isMongoConnected()) {
+      return await GalleryImageModel.findOne({ url }).exec();
+    } else {
+      const db = readLocalDB();
+      return db.galleryImages.find((img: any) => img.url === url) || null;
+    }
+  },
+
+  async createGalleryImage(imageData: any) {
+    if (isMongoConnected()) {
+      const image = new GalleryImage(imageData);
+      await image.save();
+      return image;
+    } else {
+      const db = readLocalDB();
+      const newImage = {
+        _id: 'g_' + Date.now(),
+        url: imageData.url,
+        title: imageData.title,
+        category: imageData.category,
+        visible: imageData.visible ?? true,
+        displayOrder: imageData.displayOrder ?? 0,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+      db.galleryImages.push(newImage);
+      writeLocalDB(db);
+      return newImage;
+    }
+  },
+
+  async updateGalleryImage(id: string, updateData: any) {
+    if (isMongoConnected()) {
+      if (!mongoose.Types.ObjectId.isValid(id)) return null;
+      return await GalleryImageModel.findByIdAndUpdate(id, updateData, { new: true }).exec();
+    } else {
+      const db = readLocalDB();
+      const index = db.galleryImages.findIndex((img: any) => img._id === id);
+      if (index === -1) return null;
+      const updated = {
+        ...db.galleryImages[index],
+        ...updateData,
+        updatedAt: new Date().toISOString()
+      };
+      db.galleryImages[index] = updated;
+      writeLocalDB(db);
+      return updated;
+    }
+  },
+
+  async deleteGalleryImage(id: string) {
+    if (isMongoConnected()) {
+      if (!mongoose.Types.ObjectId.isValid(id)) return null;
+      return await GalleryImageModel.findByIdAndDelete(id).exec();
+    } else {
+      const db = readLocalDB();
+      const index = db.galleryImages.findIndex((img: any) => img._id === id);
+      if (index === -1) return false;
+      db.galleryImages.splice(index, 1);
+      writeLocalDB(db);
+      return true;
+    }
+  },
+
+  // --- LEADERS ---
+  async getLeaders() {
+    if (isMongoConnected()) {
+      let leaders = await Leader.find().sort({ displayOrder: 1, createdAt: -1 });
+      if (leaders.length === 0) {
+        const founder = await this.getFounder();
+        const manager = await this.getManager();
+        const seedLeaders: any[] = [];
+        if (founder) {
+          seedLeaders.push({
+            photoUrl: founder.googleDrivePhotoUrl || '',
+            fullName: founder.name || 'Founder',
+            designation: founder.designation || 'Founder',
+            editorialMessage: founder.message || '',
+            buttonText: 'Read Full Message',
+            buttonUrl: '/founder',
+            published: true,
+            featured: true,
+            displayOrder: 0
+          });
+        }
+        if (manager) {
+          seedLeaders.push({
+            photoUrl: manager.googleDrivePhotoUrl || '',
+            fullName: manager.name || 'Manager',
+            designation: manager.designation || 'Manager',
+            editorialMessage: manager.message || '',
+            buttonText: 'Read Full Message',
+            buttonUrl: '/manager',
+            published: true,
+            featured: false,
+            displayOrder: 1
+          });
+        }
+        if (seedLeaders.length > 0) {
+          leaders = await Leader.insertMany(seedLeaders);
+          return leaders.sort((a: any, b: any) => a.displayOrder - b.displayOrder);
+        }
+      }
+      return leaders;
+    } else {
+      const db = readLocalDB();
+      if (!db.leaders || db.leaders.length === 0) {
+        const founder = await this.getFounder();
+        const manager = await this.getManager();
+        const seedLeaders: any[] = [];
+        if (founder) {
+          seedLeaders.push({
+            _id: 'l_' + Date.now() + '_f',
+            photoUrl: founder.googleDrivePhotoUrl || '',
+            fullName: founder.name || 'Founder',
+            designation: founder.designation || 'Founder',
+            editorialMessage: founder.message || '',
+            buttonText: 'Read Full Message',
+            buttonUrl: '/founder',
+            published: true,
+            featured: true,
+            displayOrder: 0,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+          });
+        }
+        if (manager) {
+          seedLeaders.push({
+            _id: 'l_' + Date.now() + '_m',
+            photoUrl: manager.googleDrivePhotoUrl || '',
+            fullName: manager.name || 'Manager',
+            designation: manager.designation || 'Manager',
+            editorialMessage: manager.message || '',
+            buttonText: 'Read Full Message',
+            buttonUrl: '/manager',
+            published: true,
+            featured: false,
+            displayOrder: 1,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+          });
+        }
+        if (seedLeaders.length > 0) {
+          db.leaders = seedLeaders;
+          writeLocalDB(db);
+        }
+      }
+      return (db.leaders || []).sort((a: any, b: any) => a.displayOrder - b.displayOrder || new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    }
+  },
+
+  async getLeaderById(id: string) {
+    if (isMongoConnected()) {
+      if (!mongoose.Types.ObjectId.isValid(id)) return null;
+      return await LeaderModel.findById(id).exec();
+    } else {
+      const db = readLocalDB();
+      return db.leaders.find((leader: any) => leader._id === id) || null;
+    }
+  },
+
+  async findLeaderByPhotoUrl(photoUrl: string) {
+    if (isMongoConnected()) {
+      return await LeaderModel.findOne({ photoUrl }).exec();
+    } else {
+      const db = readLocalDB();
+      return db.leaders.find((leader: any) => leader.photoUrl === photoUrl) || null;
+    }
+  },
+
+  async createLeader(leaderData: any) {
+    if (isMongoConnected()) {
+      const leader = new Leader(leaderData);
+      await leader.save();
+      return leader;
+    } else {
+      const db = readLocalDB();
+      const newLeader = {
+        _id: 'l_' + Date.now(),
+        photoUrl: leaderData.photoUrl,
+        fullName: leaderData.fullName,
+        designation: leaderData.designation,
+        editorialMessage: leaderData.editorialMessage,
+        buttonText: leaderData.buttonText || '',
+        buttonUrl: leaderData.buttonUrl || '',
+        published: leaderData.published ?? true,
+        featured: leaderData.featured ?? false,
+        displayOrder: leaderData.displayOrder ?? 0,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+      db.leaders.push(newLeader);
+      writeLocalDB(db);
+      return newLeader;
+    }
+  },
+
+  async updateLeader(id: string, updateData: any) {
+    if (isMongoConnected()) {
+      if (!mongoose.Types.ObjectId.isValid(id)) return null;
+      return await LeaderModel.findByIdAndUpdate(id, updateData, { new: true }).exec();
+    } else {
+      const db = readLocalDB();
+      const index = db.leaders.findIndex((leader: any) => leader._id === id);
+      if (index === -1) return null;
+      const updated = {
+        ...db.leaders[index],
+        ...updateData,
+        updatedAt: new Date().toISOString()
+      };
+      db.leaders[index] = updated;
+      writeLocalDB(db);
+      return updated;
+    }
+  },
+
+  async deleteLeader(id: string) {
+    if (isMongoConnected()) {
+      if (!mongoose.Types.ObjectId.isValid(id)) return null;
+      return await LeaderModel.findByIdAndDelete(id).exec();
+    } else {
+      const db = readLocalDB();
+      const index = db.leaders.findIndex((leader: any) => leader._id === id);
+      if (index === -1) return false;
+      db.leaders.splice(index, 1);
+      writeLocalDB(db);
+      return true;
+    }
+  },
+
 
   async updateNotice(id: string, updateData: any) {
     if (isMongoConnected()) {

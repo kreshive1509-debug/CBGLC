@@ -4,9 +4,11 @@ import { Shield, Award, Landmark, Users, Briefcase, GraduationCap, PhoneCall } f
 import { SectionHeading } from '../components/SectionHeading';
 import { COLLEGE_INFO } from '../constants/data';
 import { useAdmissionModal } from '../context/AdmissionContext';
+import { useData } from '../context/DataContext';
 
 export const Management: React.FC = () => {
   const { openModal } = useAdmissionModal();
+  const { leaders } = useData();
 
   const boardMembers = [
     {
@@ -67,6 +69,10 @@ export const Management: React.FC = () => {
     }
   ];
 
+  const displayedLeaders = leaders && leaders.length > 0
+    ? leaders.filter((leader: any) => leader.published !== false)
+    : boardMembers;
+
   return (
     <div className="bg-white min-h-screen">
       {/* Page Header */}
@@ -111,47 +117,54 @@ export const Management: React.FC = () => {
 
           {/* Cards Layout */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mt-16">
-            {boardMembers.map((member, index) => (
-              <motion.div
-                key={index}
-                initial={{ opacity: 0, y: 25 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: "-50px" }}
-                transition={{ duration: 0.5, delay: index * 0.05 }}
-                className="bg-white border border-slate-100 rounded-3xl overflow-hidden shadow-xs hover:shadow-xl transition-all flex flex-col justify-between"
-              >
-                
-                {/* Visual Top block */}
-                <div>
-                  {/* Photo with overlay banner */}
-                  <div className="relative aspect-4/3 bg-slate-100 overflow-hidden">
-                    <img
-                      src={member.image}
-                      alt={member.name}
-                      className="w-full h-full object-cover filter contrast-102 hover:scale-103 transition-transform duration-500"
-                      referrerPolicy="no-referrer"
-                    />
-                    <div className="absolute top-4 left-4 bg-primary text-white text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-md flex items-center gap-1.5 shadow-md">
-                      {member.icon}
-                      <span>{member.role}</span>
+            {displayedLeaders.map((member: any, index: number) => {
+              const image = member.photoUrl || member.image;
+              const name = member.fullName || member.name;
+              const designation = member.designation;
+              const desc = member.editorialMessage || member.desc;
+              const icon = member.icon || <Users className="w-5 h-5 text-gold" />;
+
+              return (
+                <motion.div
+                  key={index}
+                  initial={{ opacity: 0, y: 25 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, margin: '-50px' }}
+                  transition={{ duration: 0.5, delay: index * 0.05 }}
+                  className="bg-white border border-slate-100 rounded-3xl overflow-hidden shadow-xs hover:shadow-xl transition-all flex flex-col justify-between"
+                >
+                  
+                  {/* Visual Top block */}
+                  <div>
+                    {/* Photo with overlay banner */}
+                    <div className="relative aspect-4/3 bg-slate-100 overflow-hidden">
+                      <img
+                        src={image}
+                        alt={name}
+                        className="w-full h-full object-cover filter contrast-102 hover:scale-103 transition-transform duration-500"
+                        referrerPolicy="no-referrer"
+                      />
+                      <div className="absolute top-4 left-4 bg-primary text-white text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-md flex items-center gap-1.5 shadow-md">
+                        {icon}
+                        <span>{member.role}</span>
+                      </div>
+                    </div>
+
+                    {/* Header Title Information */}
+                    <div className="p-6 pb-2">
+                      <h3 className="font-serif text-lg sm:text-xl font-extrabold text-slate-800 leading-snug">
+                        {name}
+                      </h3>
+                      <p className="text-xs text-gold font-bold uppercase tracking-wider mt-1">
+                        {designation}
+                      </p>
                     </div>
                   </div>
-
-                  {/* Header Title Information */}
-                  <div className="p-6 pb-2">
-                    <h3 className="font-serif text-lg sm:text-xl font-extrabold text-slate-800 leading-snug">
-                      {member.name}
-                    </h3>
-                    <p className="text-xs text-gold font-bold uppercase tracking-wider mt-1">
-                      {member.designation}
-                    </p>
-                  </div>
-                </div>
 
                 {/* Description and Footer text */}
                 <div className="p-6 pt-0 space-y-4">
                   <p className="text-xs sm:text-sm text-slate-500 leading-relaxed font-medium">
-                    {member.desc}
+                    {desc}
                   </p>
                   <div className="h-[1px] bg-slate-100 w-full" />
                   <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">
@@ -160,7 +173,8 @@ export const Management: React.FC = () => {
                 </div>
 
               </motion.div>
-            ))}
+            );
+          })}
           </div>
 
         </div>

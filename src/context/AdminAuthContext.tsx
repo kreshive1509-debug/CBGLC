@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { initializeApp, getApps, getApp } from 'firebase/app';
-import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, User, IdTokenResult } from 'firebase/auth';
+import firebase from 'firebase/compat/app';
+import 'firebase/compat/auth';
 
 interface AdminAuthContextType {
   user: any;
@@ -45,8 +45,10 @@ let auth: any = null;
 
 if (hasConfig) {
   try {
-    const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
-    auth = getAuth(app);
+    if (!firebase.apps.length) {
+      firebase.initializeApp(firebaseConfig);
+    }
+    auth = firebase.auth();
   } catch (err) {
     console.error('Failed to initialize client-side Firebase Auth:', err);
   }
@@ -73,7 +75,7 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }
 
     if (auth) {
-      const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      const unsubscribe = auth.onAuthStateChanged(async (firebaseUser: any) => {
         if (firebaseUser) {
           try {
             const userToken = await firebaseUser.getIdToken();
@@ -105,7 +107,7 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }
 
     try {
-      const credential = await signInWithEmailAndPassword(auth, email, password);
+      const credential = await auth.signInWithEmailAndPassword(email, password);
       const userToken = await credential.user.getIdToken();
       setUser(credential.user);
       setToken(userToken);
@@ -126,7 +128,7 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       setToken(null);
       setIsSimulated(false);
     } else if (auth) {
-      await signOut(auth);
+      await auth.signOut();
       setUser(null);
       setToken(null);
     }

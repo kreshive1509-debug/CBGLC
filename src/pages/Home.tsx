@@ -59,7 +59,9 @@ const IconMap: Record<string, React.ComponentType<any>> = {
 
 export const Home: React.FC = () => {
   const { openModal } = useAdmissionModal();
-  const { settings, founder, manager, notices, admissionSettings } = useData();
+  const { settings, founder, manager, notices, admissionSettings, galleryImages } = useData();
+
+  const previewImages = galleryImages.length ? galleryImages.slice(0, 6) : GALLERY_IMAGES.slice(0, 6);
 
   // Use admissionSettings if available, otherwise fallback to settings
   const currentAdmissionStatus = admissionSettings?.admissionStatus || settings.admissionStatus;
@@ -840,7 +842,7 @@ export const Home: React.FC = () => {
           />
 
           <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mt-12">
-            {GALLERY_IMAGES.slice(0, 6).map((img, index) => (
+            {previewImages.map((img, index) => (
               <motion.div
                 key={img.id}
                 initial={{ opacity: 0, scale: 0.95 }}

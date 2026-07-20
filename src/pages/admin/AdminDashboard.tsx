@@ -9,6 +9,7 @@ import {
   Bell,
   Users,
   Layers,
+  Image,
   Phone,
   Plus,
   Edit,
@@ -27,6 +28,8 @@ import {
   Loader2
 } from 'lucide-react';
 import { AdmissionManagement } from './AdmissionManagement';
+import { GalleryManagement } from './GalleryManagement';
+import { LeadershipManagement } from './LeadershipManagement';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export function AdminDashboard() {
@@ -34,8 +37,8 @@ export function AdminDashboard() {
   const { settings, founder, manager, notices, isLoading: isDataContextLoading, refreshData } = useData();
   const navigate = useNavigate();
 
-  // Navigation tabs: 'overview' | 'notices' | 'leadership' | 'settings' | 'contact'
-  const [activeTab, setActiveTab] = useState<'overview' | 'notices' | 'leadership' | 'settings' | 'contact' | 'admission'>('overview');
+  // Navigation tabs: 'overview' | 'notices' | 'leadership' | 'leaders' | 'gallery' | 'settings' | 'contact' | 'admission'
+  const [activeTab, setActiveTab] = useState<'overview' | 'notices' | 'leadership' | 'leaders' | 'gallery' | 'settings' | 'contact' | 'admission' | 'enquiries'>('overview');
 
   // Loading States
   const [actionLoading, setActionLoading] = useState(false);
@@ -113,7 +116,7 @@ export function AdminDashboard() {
         tagline: settings.tagline || '',
         address: settings.address || '',
         primaryPhone: settings.primaryPhone || (settings as any).phone || '',
-        alternatePhone: settings.secondaryPhone || settings.alternatePhone || '',
+        secondaryPhone: settings.secondaryPhone || settings.secondaryPhone || '',
         officeEmail: settings.officeEmail || (settings as any).email || '',
         website: settings.website || '',
         googleMapEmbedLink: settings.googleMapEmbedLink || '',
@@ -418,6 +421,8 @@ export function AdminDashboard() {
             { id: 'overview', label: 'Dashboard Overview', icon: Layers },
             { id: 'notices', label: 'Notices Board (CRUD)', icon: Bell },
             { id: 'leadership', label: 'Founder & Manager Message', icon: Users },
+            { id: 'leaders', label: 'Team Leadership Records', icon: Users },
+            { id: 'gallery', label: 'Gallery CMS', icon: Image },
             { id: 'settings', label: 'Website Settings', icon: SettingsIcon },
             { id: 'contact', label: 'Contact Helpdesk Details', icon: Phone },
             { id: 'admission', label: 'Admission Management', icon: Layers },
@@ -472,6 +477,8 @@ export function AdminDashboard() {
               {activeTab === 'overview' && 'Administrative Overview'}
               {activeTab === 'notices' && 'Bulletin & Notices Board'}
               {activeTab === 'leadership' && 'Leaders Editorial Messages'}
+              {activeTab === 'leaders' && 'Team Leadership Records'}
+              {activeTab === 'gallery' && 'Gallery Content Management'}
               {activeTab === 'settings' && 'Core Institutional Profile'}
               {activeTab === 'contact' && 'Support Desk & Social Outlets'}
               {activeTab === 'admission' && 'Admission Management'}
@@ -612,8 +619,22 @@ export function AdminDashboard() {
                       onClick={() => setActiveTab('leadership')}
                       className="p-4 bg-slate-50 hover:bg-slate-100 text-slate-700 rounded-xl text-xs font-bold transition-all text-left flex items-center justify-between group border border-slate-100"
                     >
-                      <span>Update Leadership</span>
+                      <span>Update Founder / Manager</span>
                       <Users className="w-4 h-4 transition-transform group-hover:scale-110" />
+                    </button>
+                    <button
+                      onClick={() => setActiveTab('leaders')}
+                      className="p-4 bg-slate-50 hover:bg-slate-100 text-slate-700 rounded-xl text-xs font-bold transition-all text-left flex items-center justify-between group border border-slate-100"
+                    >
+                      <span>Manage Leader Records</span>
+                      <Users className="w-4 h-4 transition-transform group-hover:scale-110" />
+                    </button>
+                    <button
+                      onClick={() => setActiveTab('gallery')}
+                      className="p-4 bg-slate-50 hover:bg-slate-100 text-slate-700 rounded-xl text-xs font-bold transition-all text-left flex items-center justify-between group border border-slate-100"
+                    >
+                      <span>Manage Gallery</span>
+                      <Image className="w-4 h-4 transition-transform group-hover:scale-110" />
                     </button>
                     <button
                       onClick={() => setActiveTab('contact')}
@@ -648,7 +669,7 @@ export function AdminDashboard() {
                     </div>
                     <div className="flex justify-between items-center text-xs font-semibold pb-2 border-b border-slate-50">
                       <span className="text-slate-500">Liaison Contact:</span>
-                      <span className="text-slate-800 font-mono">{settings?.phone}</span>
+                      <span className="text-slate-800 font-mono">{settings?.primaryPhone}</span>
                     </div>
                     <div className="flex justify-between items-center text-xs font-semibold">
                       <span className="text-slate-500">Official Portal:</span>
@@ -975,6 +996,22 @@ export function AdminDashboard() {
           )}
 
           {/* ==================================== ADMISSION MANAGEMENT TAB ==================================== */}
+          {activeTab === 'leaders' && (
+            <div className="space-y-6">
+              <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
+                <LeadershipManagement notify={showNotification} />
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'gallery' && (
+            <div className="space-y-6">
+              <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
+                <GalleryManagement notify={showNotification} />
+              </div>
+            </div>
+          )}
+
           {activeTab === 'admission' && (
             <AdmissionManagement />
           )}

@@ -77,6 +77,8 @@ interface DataContextType {
   founder: PersonInfo;
   manager: PersonInfo;
   notices: any[];
+  leaders: any[];
+  galleryImages: any[];
   admissionSettings: AdmissionSettings | null;
   isLoading: boolean;
   refreshData: () => Promise<void>;
@@ -173,6 +175,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [founder, setFounder] = useState<PersonInfo>(fallbackFounder);
   const [manager, setManager] = useState<PersonInfo>(fallbackManager);
   const [notices, setNotices] = useState<any[]>(fallbackNotices);
+  const [leaders, setLeaders] = useState<any[]>([]);
+  const [galleryImages, setGalleryImages] = useState<any[]>([]);
   const [admissionSettings, setAdmissionSettings] = useState<AdmissionSettings | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -205,6 +209,20 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const data = await noticesRes.json();
         setNotices(data);
       }
+
+      // Fetch leaders
+      const leadersRes = await fetch('/api/leaders');
+      if (leadersRes.ok) {
+        const data = await leadersRes.json();
+        setLeaders(data);
+      }
+
+      // Fetch gallery images
+      const galleryRes = await fetch('/api/gallery');
+      if (galleryRes.ok) {
+        const data = await galleryRes.json();
+        setGalleryImages(data);
+      }
       
       // Fetch admission settings
       const admissionRes = await fetch('/api/admission-settings');
@@ -224,7 +242,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   return (
-    <DataContext.Provider value={{ settings, founder, manager, notices, admissionSettings, isLoading, refreshData }}>
+    <DataContext.Provider value={{ settings, founder, manager, notices, leaders, galleryImages, admissionSettings, isLoading, refreshData }}>
       {children}
     </DataContext.Provider>
   );

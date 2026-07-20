@@ -1,7 +1,7 @@
 import admin from 'firebase-admin';
 
 let isFirebaseInitialized = false;
-let adminApp: any = null;
+let adminApp: admin.App | null = null;
 
 export const initFirebase = () => {
   if (isFirebaseInitialized) return true;
@@ -14,9 +14,10 @@ export const initFirebase = () => {
   }
 
   try {
-    // Check if admin.apps is defined and has existing apps
-    if (admin.apps && admin.apps.length > 0) {
-      adminApp = admin.apps[0];
+    // Prefer the already-initialized Firebase Admin app if present
+    const existingApps = admin.getApps();
+    if (existingApps.length > 0) {
+      adminApp = existingApps[0];
     } else {
       // Try to initialize with just project ID (requires GOOGLE_APPLICATION_CREDENTIALS env var or default credentials)
       try {

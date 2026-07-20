@@ -241,7 +241,7 @@ export const FounderMessage: React.FC = () => {
               Initiate Enquiry
             </button>
             <a
-              href={`tel:${settings.phone}`}
+              href={`tel:${settings.primaryPhone}`}
               className="px-8 py-3.5 bg-slate-50 border border-slate-200 hover:bg-slate-100 text-slate-700 font-bold text-xs uppercase tracking-widest rounded-xl transition-all"
             >
               Call Admissions Desk

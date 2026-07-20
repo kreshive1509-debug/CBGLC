@@ -63,7 +63,7 @@ export const About: React.FC = () => {
             animate={{ opacity: 1, y: 0 }}
             className="text-xs font-bold uppercase tracking-widest text-gold bg-white/5 border border-white/10 px-4 py-1.5 rounded-full"
           >
-            ESTABLISHED IN {settings.established || COLLEGE_INFO.established}
+            ESTABLISHED IN {settings.academicSession || COLLEGE_INFO.established}
           </motion.span>
           <h1 className="font-serif text-3xl sm:text-5xl font-extrabold tracking-tight mt-4">
             About Our Law College

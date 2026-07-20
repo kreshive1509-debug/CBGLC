@@ -1,19 +1,27 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Image, ZoomIn, Eye, Layers } from 'lucide-react';
-import { SectionHeading } from '../components/SectionHeading';
+import { ZoomIn } from 'lucide-react';
+import { useData } from '../context/DataContext';
 import { GALLERY_IMAGES } from '../constants/data';
 
 export const Gallery: React.FC = () => {
+  const { galleryImages } = useData();
   const [activeCategory, setActiveCategory] = useState('All');
-  const [selectedImage, setSelectedImage] = useState<typeof GALLERY_IMAGES[0] | null>(null);
+  const [selectedImage, setSelectedImage] = useState<any | null>(null);
 
-  const categories = ['All', 'Campus', 'Academics', 'Moot Court', 'Events'];
+  const images = galleryImages.length ? galleryImages : GALLERY_IMAGES;
+  const categories = useMemo(() => {
+    const uniqueCategories = Array.from(new Set(images.map((img: any) => img.category || 'Unknown'))).filter(Boolean);
+    return ['All', ...uniqueCategories];
+  }, [images]);
 
   // Filter logic
-  const filteredImages = activeCategory === 'All'
-    ? GALLERY_IMAGES
-    : GALLERY_IMAGES.filter(img => img.category.toLowerCase() === activeCategory.toLowerCase());
+  const filteredImages = useMemo(() => {
+    if (activeCategory === 'All') {
+      return images;
+    }
+    return images.filter((img: any) => img.category?.toLowerCase() === activeCategory.toLowerCase());
+  }, [activeCategory, images]);
 
   return (
     <div className="bg-white">
@@ -74,9 +82,9 @@ export const Gallery: React.FC = () => {
             className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
           >
             <AnimatePresence mode="popLayout">
-              {filteredImages.map(img => (
+              {filteredImages.map((img, index) => (
                 <motion.div
-                  key={img.id}
+                  key={img._id || img.id || `${img.url}-${index}`}
                   layout
                   initial={{ opacity: 0, scale: 0.9 }}
                   animate={{ opacity: 1, scale: 1 }}
