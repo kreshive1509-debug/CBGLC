@@ -4,10 +4,11 @@ import { useAdminAuth } from '../../context/AdminAuthContext';
 import { Save, RotateCcw, Globe, Layout, Image, Phone, Mail, Share2, MapPin, GraduationCap, FileText, Search, ArrowLeft, LogOut } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
+import { signalCmsUpdated } from '../../utils/cmsSync';
 
 export function WebsiteSettingsPage() {
   const { settings, refreshData } = useData();
-  const { token, logout } = useAdminAuth();
+  const { getFreshToken, logout } = useAdminAuth();
   const navigate = useNavigate();
   const [formData, setFormData] = useState(settings);
   const [activeTab, setActiveTab] = useState('General');
@@ -42,17 +43,24 @@ export function WebsiteSettingsPage() {
     e.preventDefault();
     setIsSaving(true);
     try {
+      const authToken = await getFreshToken();
+      if (!authToken) {
+        alert('Authentication token not found. Please log in again.');
+        return;
+      }
+
       const response = await fetch('/api/settings', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${authToken}`
         },
         body: JSON.stringify(formData)
       });
       if (response.ok) {
         alert('Settings updated successfully!');
         refreshData();
+        signalCmsUpdated();
       } else {
         alert('Error updating settings');
       }

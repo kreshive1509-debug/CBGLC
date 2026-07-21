@@ -287,7 +287,7 @@ export const NOTICES: Notice[] = [
     category: "Admission",
     title: "Admissions Open for LL.B 3 Years & B.A. LL.B 5 Years (Batch 2026-27)",
     description: "Online and offline application processes have commenced for the new academic batch. Submit your admission enquiry to receive personal advisory call.",
-    content: "Chandra Bhanu Gupta Law College announces the commencement of admissions for the LL.B (3 Years) and B.A. LL.B (5 Years Integrated) programs for the session 2026-2027. Eligible candidates can register their interest by submitting the Admission Enquiry Form online or visiting the Aliganj campus. Direct documentation verification and advisory counselling with senior deans will be conducted between 10:00 AM and 4:00 PM on working days. Early applications are advised as seats are strictly limited to BCI-sanctioned counts.",
+    content: "Chandra Bhanu Gupta Law College announces the commencement of admissions for the LL.B (3 Years) and B.A. LL.B (5 Years Integrated) programs for the session 2026-2027. Eligible candidates can register their interest by submitting the Admission Enquiry Form online or visiting the Chandrawal campus. Direct documentation verification and advisory counselling with senior deans will be conducted between 10:00 AM and 4:00 PM on working days. Early applications are advised as seats are strictly limited to BCI-sanctioned counts.",
     important: true
   },
   {

@@ -9,8 +9,9 @@ export const BreakingNewsTicker: React.FC = () => {
   const currentBreakingNewsStatus = admissionSettings?.breakingNewsStatus !== undefined ? admissionSettings.breakingNewsStatus : settings.breakingNewsStatus;
   const currentBreakingNewsText = admissionSettings?.breakingNewsText || settings.breakingNewsText;
   const currentAcademicSession = admissionSettings?.academicSession || settings.academicSession;
+  const messages = (settings.breakingNewsMessages && settings.breakingNewsMessages.length ? settings.breakingNewsMessages : [currentBreakingNewsText]).filter(Boolean);
 
-  if (!currentBreakingNewsStatus || !currentBreakingNewsText) {
+  if (!currentBreakingNewsStatus || !messages.length) {
     return null;
   }
 
@@ -40,15 +41,15 @@ export const BreakingNewsTicker: React.FC = () => {
       {/* Scrolling Text Content */}
       <div className="flex-grow relative overflow-hidden h-full flex items-center">
         <div className="ticker-container flex items-center gap-12 pl-8">
-          <p className="whitespace-nowrap font-sans font-medium text-xs tracking-wide text-slate-200 flex items-center gap-2">
-            <span className="w-1.5 h-1.5 rounded-full bg-gold animate-pulse shrink-0" />
-            {currentBreakingNewsText}
-          </p>
-          {/* Duplicate for seamless loop */}
-          <p className="whitespace-nowrap font-sans font-medium text-xs tracking-wide text-slate-200 flex items-center gap-2">
-            <span className="w-1.5 h-1.5 rounded-full bg-gold animate-pulse shrink-0" />
-            {currentBreakingNewsText}
-          </p>
+          {messages.concat(messages).map((message, index) => {
+            const messageText = typeof message === 'string' ? message : (message as any)?.text || '';
+            return (
+              <p key={`${messageText}-${index}`} className="whitespace-nowrap font-sans font-medium text-xs tracking-wide text-slate-200 flex items-center gap-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-gold animate-pulse shrink-0" />
+                {messageText}
+              </p>
+            );
+          })}
         </div>
       </div>
 

@@ -30,7 +30,7 @@ export const AdmissionEnquiry: React.FC = () => {
     {
       num: "04",
       title: "Visit College Campus",
-      desc: "Plan a driving tour to Aliganj, Lucknow, to check classrooms, central library, hostels, and meet the faculty.",
+      desc: "Plan a driving tour to Chandrawal, Lucknow, to check classrooms, central library, hostels, and meet the faculty.",
       icon: <Navigation className="w-6 h-6 text-primary" />
     },
     {

@@ -1,6 +1,7 @@
 import { Response } from 'express';
 import { storage } from '../utils/storage';
 import { AuthenticatedRequest } from '../middlewares/authMiddleware';
+import { triggerVercelDeployment } from '../utils/vercelDeployment';
 
 export const getLeaders = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
@@ -8,7 +9,7 @@ export const getLeaders = async (req: AuthenticatedRequest, res: Response): Prom
     res.status(200).json(leaders);
   } catch (error: any) {
     console.error('Error fetching leaders:', error);
-    res.status(500).json({ error: 'Internal Server Error', message: error.message });
+    res.status(500).json({ error: 'Internal Server Error', message: 'Unable to fetch leaders.' });
   }
 };
 
@@ -23,48 +24,50 @@ export const getLeaderById = async (req: AuthenticatedRequest, res: Response): P
     res.status(200).json(leader);
   } catch (error: any) {
     console.error('Error fetching leader by id:', error);
-    res.status(500).json({ error: 'Internal Server Error', message: error.message });
+    res.status(500).json({ error: 'Internal Server Error', message: 'Unable to fetch leader.' });
   }
 };
 
 export const createLeader = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
-    const { photoUrl, fullName, designation, editorialMessage, buttonText, buttonUrl, published, featured, displayOrder } = req.body;
+    const { fullName, designation, membership, editorialMessage, published, displayOrder } = req.body;
 
-    if (!photoUrl || !fullName || !designation || !editorialMessage) {
-      res.status(400).json({ error: 'Validation Error: Photo URL, full name, designation, and message are required' });
-      return;
-    }
-
-    const existing = await storage.findLeaderByPhotoUrl(photoUrl);
-    if (existing) {
-      res.status(400).json({ error: 'Duplicate Photo URL is not allowed' });
+    if (!fullName || !designation || !membership) {
+      res.status(400).json({ error: 'Validation Error: Full name, designation, and membership are required' });
       return;
     }
 
     const leader = await storage.createLeader({
-      photoUrl,
       fullName,
       designation,
+      membership,
       editorialMessage,
-      buttonText: buttonText || '',
-      buttonUrl: buttonUrl || '',
       published: published ?? true,
-      featured: featured ?? false,
       displayOrder: typeof displayOrder === 'number' ? displayOrder : 0
     });
 
-    res.status(201).json({ message: 'Leader added successfully', leader });
+    const deploymentTriggered = storage.isMongoConnected()
+      ? await triggerVercelDeployment('Leadership')
+      : false;
+
+    res.status(201).json({
+      success: true,
+      deploymentTriggered,
+      message: deploymentTriggered
+        ? 'Leader added successfully. Website deployment has started. Changes will be live shortly.'
+        : 'Leader added successfully, but automatic deployment could not be started.',
+      leader
+    });
   } catch (error: any) {
     console.error('Error creating leader:', error);
-    res.status(500).json({ error: 'Internal Server Error', message: error.message });
+    res.status(500).json({ error: 'Internal Server Error', message: 'Unable to create leader.' });
   }
 };
 
 export const updateLeader = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
-    const { photoUrl, fullName, designation, editorialMessage, buttonText, buttonUrl, published, featured, displayOrder } = req.body;
+    const { fullName, designation, membership, editorialMessage, published, displayOrder } = req.body;
 
     const existingLeader = await storage.getLeaderById(id);
     if (!existingLeader) {
@@ -72,33 +75,35 @@ export const updateLeader = async (req: AuthenticatedRequest, res: Response): Pr
       return;
     }
 
-    if (!photoUrl || !fullName || !designation || !editorialMessage) {
-      res.status(400).json({ error: 'Validation Error: Photo URL, full name, designation, and message are required' });
-      return;
-    }
-
-    const duplicate = await storage.findLeaderByPhotoUrl(photoUrl);
-    if (duplicate && duplicate._id.toString() !== id) {
-      res.status(400).json({ error: 'Duplicate Photo URL is not allowed' });
+    if (!fullName || !designation || !membership) {
+      res.status(400).json({ error: 'Validation Error: Full name, designation, and membership are required' });
       return;
     }
 
     const leader = await storage.updateLeader(id, {
-      photoUrl,
       fullName,
       designation,
+      membership,
       editorialMessage,
-      buttonText: buttonText || '',
-      buttonUrl: buttonUrl || '',
       published: published ?? true,
-      featured: featured ?? false,
       displayOrder: typeof displayOrder === 'number' ? displayOrder : existingLeader.displayOrder
     });
 
-    res.status(200).json({ message: 'Leader updated successfully', leader });
+    const deploymentTriggered = storage.isMongoConnected()
+      ? await triggerVercelDeployment('Leadership')
+      : false;
+
+    res.status(200).json({
+      success: true,
+      deploymentTriggered,
+      message: deploymentTriggered
+        ? 'Leader updated successfully. Website deployment has started. Changes will be live shortly.'
+        : 'Leader updated successfully, but automatic deployment could not be started.',
+      leader
+    });
   } catch (error: any) {
     console.error('Error updating leader:', error);
-    res.status(500).json({ error: 'Internal Server Error', message: error.message });
+    res.status(500).json({ error: 'Internal Server Error', message: 'Unable to update leader.' });
   }
 };
 
@@ -117,10 +122,20 @@ export const deleteLeader = async (req: AuthenticatedRequest, res: Response): Pr
       return;
     }
 
-    res.status(200).json({ message: 'Leader deleted successfully' });
+    const deploymentTriggered = storage.isMongoConnected()
+      ? await triggerVercelDeployment('Leadership')
+      : false;
+
+    res.status(200).json({
+      success: true,
+      deploymentTriggered,
+      message: deploymentTriggered
+        ? 'Leader deleted successfully. Website deployment has started. Changes will be live shortly.'
+        : 'Leader deleted successfully, but automatic deployment could not be started.'
+    });
   } catch (error: any) {
     console.error('Error deleting leader:', error);
-    res.status(500).json({ error: 'Internal Server Error', message: error.message });
+    res.status(500).json({ error: 'Internal Server Error', message: 'Unable to delete leader.' });
   }
 };
 
@@ -138,10 +153,21 @@ export const toggleLeaderPublish = async (req: AuthenticatedRequest, res: Respon
       return;
     }
     const updated = await storage.updateLeader(id, { published });
-    res.status(200).json({ message: `Leader ${published ? 'published' : 'unpublished'} successfully`, leader: updated });
+    const deploymentTriggered = storage.isMongoConnected()
+      ? await triggerVercelDeployment('Leadership')
+      : false;
+
+    res.status(200).json({
+      success: true,
+      deploymentTriggered,
+      message: deploymentTriggered
+        ? `Leader ${published ? 'published' : 'unpublished'} successfully. Website deployment has started. Changes will be live shortly.`
+        : `Leader ${published ? 'published' : 'unpublished'} successfully, but automatic deployment could not be started.`,
+      leader: updated
+    });
   } catch (error: any) {
     console.error('Error toggling leader publish status:', error);
-    res.status(500).json({ error: 'Internal Server Error', message: error.message });
+    res.status(500).json({ error: 'Internal Server Error', message: 'Unable to update leader publish status.' });
   }
 };
 
@@ -159,9 +185,20 @@ export const toggleLeaderFeatured = async (req: AuthenticatedRequest, res: Respo
       return;
     }
     const updated = await storage.updateLeader(id, { featured });
-    res.status(200).json({ message: `Leader feature updated successfully`, leader: updated });
+    const deploymentTriggered = storage.isMongoConnected()
+      ? await triggerVercelDeployment('Leadership')
+      : false;
+
+    res.status(200).json({
+      success: true,
+      deploymentTriggered,
+      message: deploymentTriggered
+        ? 'Leader feature updated successfully. Website deployment has started. Changes will be live shortly.'
+        : 'Leader feature updated successfully, but automatic deployment could not be started.',
+      leader: updated
+    });
   } catch (error: any) {
     console.error('Error toggling leader featured status:', error);
-    res.status(500).json({ error: 'Internal Server Error', message: error.message });
+    res.status(500).json({ error: 'Internal Server Error', message: 'Unable to update leader featured status.' });
   }
 };

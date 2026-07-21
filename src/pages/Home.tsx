@@ -33,7 +33,6 @@ import {
   COLLEGE_INFO,
   HIGHLIGHTS,
   VISION_MISSION,
-  COURSES,
   WHY_CHOOSE_US,
   FACILITIES,
   FOUNDER_INFO,
@@ -57,9 +56,55 @@ const IconMap: Record<string, React.ComponentType<any>> = {
   Users
 };
 
+const formatSeats = (seats: unknown) => {
+  if (typeof seats === 'number' && Number.isFinite(seats)) {
+    return `${seats} Seats`;
+  }
+
+  if (typeof seats === 'string' && seats.trim()) {
+    return seats;
+  }
+
+  return 'TBA';
+};
+
 export const Home: React.FC = () => {
   const { openModal } = useAdmissionModal();
   const { settings, founder, manager, notices, admissionSettings, galleryImages } = useData();
+
+  const homeCourses = (Array.isArray(settings.courses) && settings.courses.length ? settings.courses : [
+    {
+      id: 'llb-3yrs',
+      name: 'LL.B (3 Years Program)',
+      shortDescription: 'A comprehensive professional law course designed for graduates seeking a powerful career in legal practice, judiciary, or corporate advocacy.',
+      duration: '3 Years (6 Semesters)',
+      seats: '120 Seats',
+      type: 'Postgraduate Law Degree',
+      eligibility: 'Graduation in any discipline from a recognized University with minimum 45% marks (40% for SC/ST candidates as per BCI guidelines).',
+      displayOrder: 0
+    },
+    {
+      id: 'llb-5yrs',
+      name: 'B.A. LL.B (5 Years Integrated)',
+      shortDescription: 'An elite integrated course combining liberal arts and law, tailor-made for students immediately after high school aiming for legal mastery.',
+      duration: '5 Years (10 Semesters)',
+      seats: '120 Seats',
+      type: 'Integrated Undergraduate Degree',
+      eligibility: '10+2 or equivalent examination from a recognized Board with minimum 45% marks (40% for SC/ST candidates as per BCI rules).',
+      displayOrder: 1
+    }
+  ])
+    .map((course: any, index: number) => ({
+      id: course.id || `course-${index}`,
+      name: course.name || course.title || 'Course',
+      shortDescription: course.shortDescription || course.shortDesc || course.description || '',
+      duration: course.duration || 'TBA',
+      seats: formatSeats(course.seats),
+      type: course.type || course.badge || course.programBadge || 'Program',
+      eligibility: course.eligibility || 'Minimum qualifying marks as per regulatory norms',
+      displayOrder: course.displayOrder ?? index
+    }))
+    .sort((a: any, b: any) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0));
 
   const previewImages = galleryImages.length ? galleryImages.slice(0, 6) : GALLERY_IMAGES.slice(0, 6);
 
@@ -81,7 +126,7 @@ export const Home: React.FC = () => {
     <div className="overflow-hidden">
       <SEOHelper
         title={settings.metaTitle || `${settings.collegeName} | Top BCI Approved Law College in Lucknow`}
-        description={settings.metaDescription || `${settings.collegeName} is a premier law college affiliated with Lucknow University, offering B.A. LL.B (5-year integrated) and LL.B (3-year) programs with state-of-the-art facilities in Aliganj, Lucknow.`}
+        description={settings.metaDescription || `${settings.collegeName} is a premier law college affiliated with Lucknow University, offering B.A. LL.B (5-year integrated) and LL.B (3-year) programs with state-of-the-art facilities in Chandrawal, Lucknow.`}
         jsonLd={{
           "@context": "https://schema.org",
           "@type": "CollegeOrUniversity",
@@ -150,9 +195,9 @@ export const Home: React.FC = () => {
             transition={{ duration: 0.6, delay: 0.2 }}
             className="text-xs sm:text-sm font-semibold uppercase tracking-widest text-gold drop-shadow-md flex items-center justify-center gap-1.5 flex-wrap"
           >
-            <span>Approved by BCI (Bar Council of India)</span>
+            <span>{settings.heroSmallTagline || 'Approved by BCI (Bar Council of India)'}</span>
             <span className="text-white/40">•</span>
-            <span>Affiliated to University of Lucknow</span>
+            <span>{settings.heroAdmissionBadge || 'Admission Open'}</span>
           </motion.p>
 
           {/* College Main Title */}
@@ -162,7 +207,7 @@ export const Home: React.FC = () => {
             transition={{ duration: 0.7, delay: 0.3 }}
             className="font-serif text-3xl sm:text-5xl md:text-6xl font-extrabold tracking-tight mt-4 leading-tight uppercase"
           >
-            {settings.collegeName}
+            {settings.heroTitle || settings.collegeName}
           </motion.h1>
 
           {/* Taglines */}
@@ -172,7 +217,7 @@ export const Home: React.FC = () => {
             transition={{ duration: 0.6, delay: 0.4 }}
             className="text-sm sm:text-lg md:text-xl text-slate-300 font-sans tracking-wide mt-4 max-w-2xl font-light"
           >
-            {settings.tagline} •{' '}
+            {settings.heroSubtitle || settings.tagline} •{' '}
             {currentAdmissionStatus === 'Open' && (
               <span className="text-white font-semibold underline decoration-gold underline-offset-4">
                 {currentAdmissionMessage} {currentAcademicSession}
@@ -198,7 +243,7 @@ export const Home: React.FC = () => {
               className="w-full sm:w-auto bg-transparent border-2 border-white/80 hover:bg-white hover:text-slate-900 text-white font-bold text-xs uppercase tracking-widest py-3.5 px-8 rounded-xl transition-all hover:scale-102 flex items-center justify-center gap-2 cursor-pointer"
             >
               <Download className="w-4 h-4" />
-              {settings.brochureButtonText}
+              {settings.heroSecondaryCtaText || settings.brochureButtonText}
             </button>
           </motion.div>
 
@@ -209,24 +254,18 @@ export const Home: React.FC = () => {
             transition={{ duration: 0.8, delay: 0.6 }}
             className="grid grid-cols-3 gap-6 sm:gap-10 border-t border-white/10 pt-8 mt-12 w-full max-w-xl text-center"
           >
-            <div className="flex flex-col items-center">
-              <span className="text-lg sm:text-2xl text-gold">📍</span>
-              <span className="text-[10px] sm:text-xs uppercase font-bold tracking-widest mt-1 text-slate-300">
-                Lucknow Campus
-              </span>
-            </div>
-            <div className="flex flex-col items-center">
-              <span className="text-lg sm:text-2xl text-gold">🎓</span>
-              <span className="text-[10px] sm:text-xs uppercase font-bold tracking-widest mt-1 text-slate-300">
-                Law Programs
-              </span>
-            </div>
-            <div className="flex flex-col items-center">
-              <span className="text-lg sm:text-2xl text-gold">⚖️</span>
-              <span className="text-[10px] sm:text-xs uppercase font-bold tracking-widest mt-1 text-slate-300">
-                BCI Approved
-              </span>
-            </div>
+            {(settings.heroStats && settings.heroStats.length ? settings.heroStats : [
+              { label: 'Lucknow Campus', value: '📍' },
+              { label: 'Law Programs', value: '🎓' },
+              { label: 'BCI Approved', value: '⚖️' }
+            ]).map((stat, index) => (
+              <div key={`${stat.label}-${index}`} className="flex flex-col items-center">
+                <span className="text-lg sm:text-2xl text-gold">{stat.value}</span>
+                <span className="text-[10px] sm:text-xs uppercase font-bold tracking-widest mt-1 text-slate-300">
+                  {stat.label}
+                </span>
+              </div>
+            ))}
           </motion.div>
 
           {/* Scroll Down Indicator */}
@@ -375,20 +414,23 @@ export const Home: React.FC = () => {
                 <div className="w-14 h-14 rounded-2xl bg-primary/5 text-primary flex items-center justify-center border border-primary/10">
                   <Award className="w-7 h-7 text-primary" />
                 </div>
-                <h3 className="font-serif text-2xl font-extrabold text-slate-800">{VISION_MISSION.vision.title}</h3>
+                <h3 className="font-serif text-2xl font-extrabold text-slate-800">{settings.visionTitle || VISION_MISSION.vision.title}</h3>
                 <p className="text-gold font-serif italic text-sm leading-relaxed border-l-2 border-gold/40 pl-3">
-                  "{VISION_MISSION.vision.quote}"
+                  "{settings.visionQuote || VISION_MISSION.vision.quote}"
                 </p>
                 <p className="text-slate-500 text-xs sm:text-sm leading-relaxed">
-                  {VISION_MISSION.vision.description}
+                  {settings.visionDescription || VISION_MISSION.vision.description}
                 </p>
                 <ul className="space-y-2.5 pt-2">
-                  {VISION_MISSION.vision.points.map((pt, index) => (
+                  {(settings.visionPoints && settings.visionPoints.length ? settings.visionPoints : VISION_MISSION.vision.points).map((pt, index) => {
+                    const pointText = typeof pt === 'string' ? pt : (pt as any)?.text || '';
+                    return (
                     <li key={index} className="flex items-start gap-2.5 text-xs text-slate-600 font-semibold">
                       <ChevronRight className="w-4 h-4 text-gold shrink-0 mt-0.5" />
-                      <span>{pt}</span>
+                      <span>{pointText}</span>
                     </li>
-                  ))}
+                  );
+                  })}
                 </ul>
               </div>
               <div className="mt-8 border-t border-slate-50 pt-4 flex items-center gap-2 text-[10px] uppercase font-bold text-primary tracking-wider">
@@ -408,20 +450,23 @@ export const Home: React.FC = () => {
                 <div className="w-14 h-14 rounded-2xl bg-primary/5 text-primary flex items-center justify-center border border-primary/10">
                   <Scale className="w-7 h-7 text-primary" />
                 </div>
-                <h3 className="font-serif text-2xl font-extrabold text-slate-800">{VISION_MISSION.mission.title}</h3>
+                <h3 className="font-serif text-2xl font-extrabold text-slate-800">{settings.missionTitle || VISION_MISSION.mission.title}</h3>
                 <p className="text-gold font-serif italic text-sm leading-relaxed border-l-2 border-gold/40 pl-3">
-                  "{VISION_MISSION.mission.quote}"
+                  "{settings.missionQuote || VISION_MISSION.mission.quote}"
                 </p>
                 <p className="text-slate-500 text-xs sm:text-sm leading-relaxed">
-                  {VISION_MISSION.mission.description}
+                  {settings.missionDescription || VISION_MISSION.mission.description}
                 </p>
                 <ul className="space-y-2.5 pt-2">
-                  {VISION_MISSION.mission.points.map((pt, index) => (
+                  {(settings.missionPoints && settings.missionPoints.length ? settings.missionPoints : VISION_MISSION.mission.points).map((pt, index) => {
+                    const pointText = typeof pt === 'string' ? pt : (pt as any)?.text || '';
+                    return (
                     <li key={index} className="flex items-start gap-2.5 text-xs text-slate-600 font-semibold">
                       <ChevronRight className="w-4 h-4 text-gold shrink-0 mt-0.5" />
-                      <span>{pt}</span>
+                      <span>{pointText}</span>
                     </li>
-                  ))}
+                  );
+                  })}
                 </ul>
               </div>
               <div className="mt-8 border-t border-slate-50 pt-4 flex items-center gap-2 text-[10px] uppercase font-bold text-primary tracking-wider">
@@ -445,7 +490,7 @@ export const Home: React.FC = () => {
           />
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-12">
-            {COURSES.map((course, index) => (
+            {homeCourses.map((course, index) => (
               <motion.div
                 key={course.id}
                 initial={{ opacity: 0, y: 30 }}
@@ -474,7 +519,7 @@ export const Home: React.FC = () => {
                   </div>
 
                   <p className="text-slate-500 text-xs sm:text-sm mt-4 leading-relaxed">
-                    {course.shortDesc}
+                    {course.shortDescription}
                   </p>
 
                   <div className="border-t border-slate-50 my-5 pt-5 space-y-3">
@@ -908,7 +953,7 @@ export const Home: React.FC = () => {
               📞 <strong>Personal Callback:</strong> After reviewing details, the college dean admission counseling panel will personally call eligible candidates for guidance.
             </p>
             <p>
-              🏫 <strong>Physical Verification:</strong> Final admissions will be completed <em>strictly</em> after visiting the college campus in Aliganj, Lucknow, undergoing counseling, and checking original documents.
+              🏫 <strong>Physical Verification:</strong> Final admissions will be completed <em>strictly</em> after visiting the college campus in Chandrawal, Lucknow, undergoing counseling, and checking original documents.
             </p>
           </div>
 

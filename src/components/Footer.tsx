@@ -1,13 +1,16 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Mail, Phone, MapPin, Globe, Shield, FileText, ChevronRight } from 'lucide-react';
+import { Mail, Phone, MapPin, Globe, Shield, FileText, ChevronRight, Facebook, Instagram, Linkedin, Youtube, Twitter } from 'lucide-react';
 import { useAdmissionModal } from '../context/AdmissionContext';
 import { useData } from '../context/DataContext';
 import { COURSES } from '../constants/data';
 
+const normalizeCourseName = (course: any, index: number) => course?.name || course?.title || `Course ${index + 1}`;
+
 export const Footer: React.FC = () => {
   const { openModal } = useAdmissionModal();
   const { settings } = useData();
+  const footerCourses = Array.isArray(settings.courses) && settings.courses.length ? settings.courses : COURSES;
 
   const currentYear = new Date().getFullYear();
 
@@ -103,14 +106,14 @@ export const Footer: React.FC = () => {
               Law Programs
             </h4>
             <ul className="space-y-3.5">
-              {COURSES.map((course) => (
-                <li key={course.id}>
+              {footerCourses.map((course, index) => (
+                <li key={course.id || `${normalizeCourseName(course, index)}-${index}`}>
                   <Link
                     to={`/courses`}
                     className="text-slate-500 hover:text-primary text-xs font-semibold flex items-center gap-1.5 transition-colors group"
                   >
                     <ChevronRight className="w-3.5 h-3.5 text-slate-300 group-hover:text-primary transition-colors shrink-0" />
-                    <span className="truncate">{course.name}</span>
+                    <span className="truncate">{normalizeCourseName(course, index)}</span>
                   </Link>
                 </li>
               ))}
@@ -168,28 +171,26 @@ export const Footer: React.FC = () => {
           {/* Social Media icons */}
           <div className="flex items-center gap-3">
             {[
-              { name: 'Facebook', url: settings.facebook },
-              { name: 'Instagram', url: settings.instagram },
-              { name: 'LinkedIn', url: settings.linkedin },
-              { name: 'YouTube', url: settings.youtube }
-            ].map((network) => {
-              if (!network.url) return null;
+              { name: 'Facebook', url: settings.facebook, icon: Facebook },
+              { name: 'Instagram', url: settings.instagram, icon: Instagram },
+              { name: 'LinkedIn', url: settings.linkedin, icon: Linkedin },
+              { name: 'YouTube', url: settings.youtube, icon: Youtube },
+              { name: 'Twitter', url: settings.twitter, icon: Twitter }
+            ].filter((network) => network.url).map((network) => {
+              const Icon = network.icon;
               return (
                 <a
                   key={network.name}
                   href={network.url}
                   target="_blank"
                   rel="noreferrer"
-                  className="w-8 h-8 rounded-full bg-slate-50 hover:bg-primary hover:text-white text-slate-400 flex items-center justify-center border border-slate-100 transition-all text-xs font-semibold"
+                  className="w-8 h-8 rounded-full bg-white/90 hover:bg-primary hover:text-white text-slate-500 flex items-center justify-center border border-slate-200 shadow-sm transition-all duration-300 hover:scale-105"
                   title={`Follow us on ${network.name}`}
                 >
-                  {network.name[0]}
+                  <Icon className="w-4 h-4" />
                 </a>
               );
             })}
-            <Link to="/admin/login" className="text-slate-300 hover:text-primary text-[10px] uppercase font-bold ml-2 transition-colors">
-              Admin
-            </Link>
           </div>
 
           {/* Legal / Copyrights */}

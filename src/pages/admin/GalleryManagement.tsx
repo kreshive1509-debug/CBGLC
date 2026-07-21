@@ -42,7 +42,7 @@ interface GalleryManagementProps {
 }
 
 export function GalleryManagement({ notify }: GalleryManagementProps) {
-  const { token } = useAdminAuth();
+  const { getFreshToken } = useAdminAuth();
   const [images, setImages] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
@@ -123,13 +123,19 @@ export function GalleryManagement({ notify }: GalleryManagementProps) {
 
     setActionLoading(true);
     try {
+      const authToken = await getFreshToken();
+      if (!authToken) {
+        notify('Authentication token not found. Please log in again.', true);
+        return;
+      }
+
       const endpoint = editingImage ? `/api/gallery/${editingImage._id}` : '/api/gallery';
       const method = editingImage ? 'PUT' : 'POST';
       const res = await fetch(endpoint, {
         method,
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
+          Authorization: `Bearer ${authToken}`
         },
         body: JSON.stringify(formData)
       });
@@ -158,9 +164,15 @@ export function GalleryManagement({ notify }: GalleryManagementProps) {
     if (!confirmDeleteId) return;
     setActionLoading(true);
     try {
+      const authToken = await getFreshToken();
+      if (!authToken) {
+        notify('Authentication token not found. Please log in again.', true);
+        return;
+      }
+
       const res = await fetch(`/api/gallery/${confirmDeleteId}`, {
         method: 'DELETE',
-        headers: { Authorization: `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${authToken}` }
       });
       const data = await res.json();
       if (!res.ok) {
@@ -180,11 +192,17 @@ export function GalleryManagement({ notify }: GalleryManagementProps) {
   const toggleVisibility = async (item: any) => {
     setActionLoading(true);
     try {
+      const authToken = await getFreshToken();
+      if (!authToken) {
+        notify('Authentication token not found. Please log in again.', true);
+        return;
+      }
+
       const res = await fetch(`/api/gallery/${item._id}/visible`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
+          Authorization: `Bearer ${authToken}`
         },
         body: JSON.stringify({ visible: !item.visible })
       });
@@ -206,11 +224,17 @@ export function GalleryManagement({ notify }: GalleryManagementProps) {
     const newOrder = (item.displayOrder ?? 0) + delta;
     setActionLoading(true);
     try {
+      const authToken = await getFreshToken();
+      if (!authToken) {
+        notify('Authentication token not found. Please log in again.', true);
+        return;
+      }
+
       const res = await fetch(`/api/gallery/${item._id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
+          Authorization: `Bearer ${authToken}`
         },
         body: JSON.stringify({
           ...item,
@@ -280,20 +304,19 @@ export function GalleryManagement({ notify }: GalleryManagementProps) {
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
               <div className="space-y-1">
                 <label className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Category</label>
-                <input
-                  type="text"
-                  list="gallery-categories"
+                <select
                   value={formData.category}
                   onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                  placeholder="Campus, Events, Workshop..."
-                  className="w-full px-4 py-3 border border-slate-200 rounded-2xl text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary/20"
+                  className="w-full px-4 py-3 border border-slate-200 rounded-2xl text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary/20 bg-white"
                   required
-                />
-                <datalist id="gallery-categories">
+                >
                   {categories.map((category) => (
-                    <option key={category} value={category} />
+                    <option key={category} value={category}>
+                      {category}
+                    </option>
                   ))}
-                </datalist>
+                </select>
+                <p className="text-[11px] text-slate-400">This category controls the public gallery filter.</p>
               </div>
               <div className="space-y-1">
                 <label className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Display Order</label>

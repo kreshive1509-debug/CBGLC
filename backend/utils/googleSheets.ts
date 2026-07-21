@@ -28,8 +28,8 @@ export const appendToGoogleSheet = async (data: any[]) => {
       },
     });
 
-    console.log('✅ Successfully appended data to Google Sheets.');
-  } catch (error) {
-    console.error('❌ Error appending to Google Sheets:', error);
+    console.log('Google Sheets append completed.');
+  } catch {
+    console.error('Error appending data to Google Sheets.');
   }
 };

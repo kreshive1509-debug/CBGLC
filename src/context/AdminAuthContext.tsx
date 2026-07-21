@@ -5,6 +5,7 @@ import 'firebase/compat/auth';
 interface AdminAuthContextType {
   user: any;
   token: string | null;
+  getFreshToken: () => Promise<string | null>;
   isAuthenticated: boolean;
   isFirebaseConfigured: boolean;
   isProduction: boolean;
@@ -62,9 +63,9 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Check if there is an active simulated session in localStorage
-    const simUser = localStorage.getItem('simulated_admin_user');
-    const simToken = localStorage.getItem('simulated_admin_token');
+    // Check if there is an active simulated session for this browser tab.
+    const simUser = sessionStorage.getItem('simulated_admin_user');
+    const simToken = sessionStorage.getItem('simulated_admin_token');
     
     if (simUser && simToken) {
       setUser(JSON.parse(simUser));
@@ -75,7 +76,7 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }
 
     if (auth) {
-      const unsubscribe = auth.onAuthStateChanged(async (firebaseUser: any) => {
+      const unsubscribe = auth.onIdTokenChanged(async (firebaseUser: any) => {
         if (firebaseUser) {
           try {
             const userToken = await firebaseUser.getIdToken();
@@ -108,7 +109,7 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
     try {
       const credential = await auth.signInWithEmailAndPassword(email, password);
-      const userToken = await credential.user.getIdToken();
+      const userToken = await credential.user.getIdToken(true);
       setUser(credential.user);
       setToken(userToken);
       setIsSimulated(false);
@@ -122,8 +123,8 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const logout = async () => {
     setError(null);
     if (isSimulated) {
-      localStorage.removeItem('simulated_admin_user');
-      localStorage.removeItem('simulated_admin_token');
+      sessionStorage.removeItem('simulated_admin_user');
+      sessionStorage.removeItem('simulated_admin_token');
       setUser(null);
       setToken(null);
       setIsSimulated(false);
@@ -149,12 +150,30 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     };
     const mockToken = 'mock_admin_token';
 
-    localStorage.setItem('simulated_admin_user', JSON.stringify(mockUser));
-    localStorage.setItem('simulated_admin_token', mockToken);
+    sessionStorage.setItem('simulated_admin_user', JSON.stringify(mockUser));
+    sessionStorage.setItem('simulated_admin_token', mockToken);
     
     setUser(mockUser);
     setToken(mockToken);
     setIsSimulated(true);
+  };
+
+  const getFreshToken = async () => {
+    if (isSimulated) {
+      return sessionStorage.getItem('simulated_admin_token');
+    }
+
+    if (auth?.currentUser) {
+      try {
+        const freshToken = await auth.currentUser.getIdToken(true);
+        setToken(freshToken);
+        return freshToken;
+      } catch (err) {
+        console.error('Failed to refresh Firebase token:', err);
+      }
+    }
+
+    return token;
   };
 
   return (
@@ -162,6 +181,7 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       value={{
         user,
         token,
+        getFreshToken,
         isAuthenticated: !!user,
         isFirebaseConfigured: hasConfig,
         isProduction,

@@ -43,7 +43,7 @@ export const About: React.FC = () => {
     <div className="bg-white">
       <SEOHelper
         title={`About Us | ${settings.collegeName}`}
-        description={`Learn more about the history, vision, mission, and academic objectives of ${settings.collegeName}, Aliganj, Lucknow. Approved by BCI and affiliated with Lucknow University.`}
+        description={`Learn more about the history, vision, mission, and academic objectives of ${settings.collegeName}, Chandrawal, Lucknow. Approved by BCI and affiliated with Lucknow University.`}
       />
       {/* Page Header (Hero style banner) */}
       <section className="relative py-20 bg-slate-950 text-white overflow-hidden">
@@ -86,20 +86,18 @@ export const About: React.FC = () => {
                 align="left"
               />
               <p className="text-slate-600 text-sm sm:text-base leading-relaxed -mt-6">
-                {settings.collegeName} is a premier center of excellence in legal education in Lucknow, Uttar Pradesh. Named after the eminent political scholar and social reformer Dr. Chandra Bhanu Gupta, the college has been at the forefront of providing quality, accessible, and comprehensive legal training since its inception.
-              </p>
-              <p className="text-slate-600 text-sm sm:text-base leading-relaxed">
-                By fusing rigorous academic theory with clinical courtroom exercises, the college ensures that students develop deep analytical precision, litigation confidence, and ethical frameworks. Our professional LL.B and Integrated B.A. LL.B programs are designed to match both traditional court procedures and dynamic modern corporate litigation standards.
+                {settings.aboutDescription || `${settings.collegeName} is a premier center of excellence in legal education in Lucknow, Uttar Pradesh. Named after the eminent political scholar and social reformer Dr. Chandra Bhanu Gupta, the college has been at the forefront of providing quality, accessible, and comprehensive legal training since its inception.`}
               </p>
               <div className="flex flex-wrap gap-4 pt-2">
-                <div className="inline-flex items-center gap-2 bg-slate-50 border border-slate-100 p-3 rounded-xl text-xs font-bold text-slate-700">
-                  <ShieldCheck className="w-5 h-5 text-primary" />
-                  <span>BCI Approved Program</span>
-                </div>
-                <div className="inline-flex items-center gap-2 bg-slate-50 border border-slate-100 p-3 rounded-xl text-xs font-bold text-slate-700">
-                  <Landmark className="w-5 h-5 text-primary" />
-                  <span>Lucknow University Affiliation</span>
-                </div>
+                {(settings.aboutHighlights && settings.aboutHighlights.length ? settings.aboutHighlights : ['BCI Approved Program', 'Lucknow University Affiliation']).map((item, idx) => {
+                  const itemText = typeof item === 'string' ? item : (item as any)?.text || '';
+                  return (
+                  <div key={idx} className="inline-flex items-center gap-2 bg-slate-50 border border-slate-100 p-3 rounded-xl text-xs font-bold text-slate-700">
+                    <ShieldCheck className="w-5 h-5 text-primary" />
+                    <span>{itemText}</span>
+                  </div>
+                );
+                })}
               </div>
             </div>
 
@@ -107,7 +105,7 @@ export const About: React.FC = () => {
               <div className="absolute -inset-3 border-2 border-dashed border-gold/30 rounded-3xl transform rotate-1 translate-x-2 translate-y-2 pointer-events-none" />
               <div className="relative overflow-hidden rounded-2xl shadow-xl aspect-4/3 bg-slate-100">
                 <img
-                  src="https://images.unsplash.com/photo-1562774053-701939374585?auto=format&fit=crop&w=800&q=80"
+                  src={settings.aboutImageUrl || 'https://images.unsplash.com/photo-1562774053-701939374585?auto=format&fit=crop&w=800&q=80'}
                   alt="CBG Law Campus"
                   className="w-full h-full object-cover hover:scale-103 transition-transform duration-500"
                   referrerPolicy="no-referrer"
@@ -139,7 +137,7 @@ export const About: React.FC = () => {
               align="left"
             />
             <p className="text-slate-600 text-sm sm:text-base leading-relaxed -mt-6">
-              Established in {COLLEGE_INFO.established}, our college carries a profound academic legacy. The institution was set up by visionary legal reformers who identified the urgent need for a dedicated, high-quality law academy in North India. Over the years, the campus has evolved from a small assembly into a fully fledged, multi-acre educational haven in Lucknow's Aliganj neighborhood.
+              Established in {COLLEGE_INFO.established}, our college carries a profound academic legacy. The institution was set up by visionary legal reformers who identified the urgent need for a dedicated, high-quality law academy in North India. Over the years, the campus has evolved from a small assembly into a fully fledged, multi-acre educational haven in Lucknow's Chandrawal neighborhood.
             </p>
             <p className="text-slate-600 text-sm sm:text-base leading-relaxed">
               Named in memory of Dr. Chandra Bhanu Gupta, whose life was a testament to public integrity and education, we have consistently upheld the highest standard of bar parameters. Our history is recorded in the outstanding achievements of our alumni, who now serve as High Court advocates, judicial magistrates, corporate counsels, and policy analysts.
@@ -166,15 +164,15 @@ export const About: React.FC = () => {
               <div className="w-12 h-12 bg-primary/5 rounded-2xl flex items-center justify-center border border-primary/10">
                 <Compass className="w-6 h-6 text-primary" />
               </div>
-              <h3 className="font-serif text-2xl font-extrabold text-slate-900">{VISION_MISSION.vision.title}</h3>
+              <h3 className="font-serif text-2xl font-extrabold text-slate-900">{settings.visionTitle || VISION_MISSION.vision.title}</h3>
               <p className="text-slate-500 text-xs sm:text-sm font-semibold italic border-l-4 border-gold pl-4 leading-relaxed">
-                "{VISION_MISSION.vision.quote}"
+                "{settings.visionQuote || VISION_MISSION.vision.quote}"
               </p>
               <p className="text-slate-600 text-sm leading-relaxed">
-                {VISION_MISSION.vision.description}
+                {settings.visionDescription || VISION_MISSION.vision.description}
               </p>
               <div className="space-y-2 pt-2">
-                {VISION_MISSION.vision.points.map((pt, idx) => (
+                {(settings.visionPoints && settings.visionPoints.length ? settings.visionPoints : VISION_MISSION.vision.points).map((pt, idx) => (
                   <div key={idx} className="flex items-start gap-2.5 text-xs text-slate-500">
                     <CheckCircle className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
                     <span>{pt}</span>
@@ -191,15 +189,15 @@ export const About: React.FC = () => {
               <div className="w-12 h-12 bg-primary/5 rounded-2xl flex items-center justify-center border border-primary/10">
                 <Award className="w-6 h-6 text-primary" />
               </div>
-              <h3 className="font-serif text-2xl font-extrabold text-slate-900">{VISION_MISSION.mission.title}</h3>
+              <h3 className="font-serif text-2xl font-extrabold text-slate-900">{settings.missionTitle || VISION_MISSION.mission.title}</h3>
               <p className="text-slate-500 text-xs sm:text-sm font-semibold italic border-l-4 border-gold pl-4 leading-relaxed">
-                "{VISION_MISSION.mission.quote}"
+                "{settings.missionQuote || VISION_MISSION.mission.quote}"
               </p>
               <p className="text-slate-600 text-sm leading-relaxed">
-                {VISION_MISSION.mission.description}
+                {settings.missionDescription || VISION_MISSION.mission.description}
               </p>
               <div className="space-y-2 pt-2">
-                {VISION_MISSION.mission.points.map((pt, idx) => (
+                {(settings.missionPoints && settings.missionPoints.length ? settings.missionPoints : VISION_MISSION.mission.points).map((pt, idx) => (
                   <div key={idx} className="flex items-start gap-2.5 text-xs text-slate-500">
                     <CheckCircle className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
                     <span>{pt}</span>
@@ -327,7 +325,7 @@ export const About: React.FC = () => {
               align="left"
             />
             <p className="text-slate-600 text-sm sm:text-base leading-relaxed -mt-6">
-              There is no substitute for experiencing an environment designed strictly to inspire professional litigation. Our campus at Sector C, Aliganj, Lucknow features fully air-conditioned smart classrooms equipped with display panels, touch screens, and high-speed Wi-Fi resources.
+              There is no substitute for experiencing an environment designed strictly to inspire professional litigation. Our campus at Sector C, Chandrawal, Lucknow features fully air-conditioned smart classrooms equipped with display panels, touch screens, and high-speed Wi-Fi resources.
             </p>
             <p className="text-slate-600 text-sm sm:text-base leading-relaxed">
               We host a majestic wood-paneled championship Moot Courtroom, separate student hostels with modern mess facilities, high-speed computerized e-research labs running LexisNexis, and a collegiate sports arena to maintain physical and mental wellness.

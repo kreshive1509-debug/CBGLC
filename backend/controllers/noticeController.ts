@@ -1,6 +1,7 @@
 import { Response } from 'express';
 import { storage } from '../utils/storage';
 import { AuthenticatedRequest } from '../middlewares/authMiddleware';
+import { triggerVercelDeployment } from '../utils/vercelDeployment';
 
 export const getNotices = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
@@ -15,7 +16,7 @@ export const getNotices = async (req: AuthenticatedRequest, res: Response): Prom
     res.status(200).json(notices);
   } catch (error: any) {
     console.error('Error fetching notices:', error);
-    res.status(500).json({ error: 'Internal Server Error', message: error.message });
+    res.status(500).json({ error: 'Internal Server Error', message: 'Unable to fetch notices.' });
   }
 };
 
@@ -32,7 +33,7 @@ export const getNoticeById = async (req: AuthenticatedRequest, res: Response): P
     res.status(200).json(notice);
   } catch (error: any) {
     console.error('Error fetching notice by id:', error);
-    res.status(500).json({ error: 'Internal Server Error', message: error.message });
+    res.status(500).json({ error: 'Internal Server Error', message: 'Unable to fetch notice.' });
   }
 };
 
@@ -56,10 +57,21 @@ export const createNotice = async (req: AuthenticatedRequest, res: Response): Pr
       published: published ?? true
     });
 
-    res.status(201).json({ message: 'Notice created successfully', notice: newNotice });
+    const deploymentTriggered = storage.isMongoConnected()
+      ? await triggerVercelDeployment('Notices')
+      : false;
+
+    res.status(201).json({
+      success: true,
+      deploymentTriggered,
+      message: deploymentTriggered
+        ? 'Notice created successfully. Website deployment has started. Changes will be live shortly.'
+        : 'Notice created successfully, but automatic deployment could not be started.',
+      notice: newNotice
+    });
   } catch (error: any) {
     console.error('Error creating notice:', error);
-    res.status(500).json({ error: 'Internal Server Error', message: error.message });
+    res.status(500).json({ error: 'Internal Server Error', message: 'Unable to create notice.' });
   }
 };
 
@@ -90,10 +102,21 @@ export const updateNotice = async (req: AuthenticatedRequest, res: Response): Pr
       published: published ?? true
     });
 
-    res.status(200).json({ message: 'Notice updated successfully', notice: updatedNotice });
+    const deploymentTriggered = storage.isMongoConnected()
+      ? await triggerVercelDeployment('Notices')
+      : false;
+
+    res.status(200).json({
+      success: true,
+      deploymentTriggered,
+      message: deploymentTriggered
+        ? 'Notice updated successfully. Website deployment has started. Changes will be live shortly.'
+        : 'Notice updated successfully, but automatic deployment could not be started.',
+      notice: updatedNotice
+    });
   } catch (error: any) {
     console.error('Error updating notice:', error);
-    res.status(500).json({ error: 'Internal Server Error', message: error.message });
+    res.status(500).json({ error: 'Internal Server Error', message: 'Unable to update notice.' });
   }
 };
 
@@ -119,14 +142,24 @@ export const deleteNotice = async (req: AuthenticatedRequest, res: Response): Pr
     const result = await storage.deleteNotice(id);
     if (result) {
       console.log(`[NoticeController] Successfully deleted notice ID: ${id}`);
-      res.status(200).json({ message: 'Notice deleted successfully' });
+      const deploymentTriggered = storage.isMongoConnected()
+        ? await triggerVercelDeployment('Notices')
+        : false;
+
+      res.status(200).json({
+        success: true,
+        deploymentTriggered,
+        message: deploymentTriggered
+          ? 'Notice deleted successfully. Website deployment has started. Changes will be live shortly.'
+          : 'Notice deleted successfully, but automatic deployment could not be started.'
+      });
     } else {
       console.error(`[NoticeController] Storage layer failed to delete notice ID: ${id}`);
       res.status(500).json({ error: 'Failed to delete notice from storage engine.' });
     }
   } catch (error: any) {
     console.error('[NoticeController] Critical error in deleteNotice:', error);
-    res.status(500).json({ error: 'Internal Server Error', message: error.message });
+    res.status(500).json({ error: 'Internal Server Error', message: 'Unable to delete notice.' });
   }
 };
 
@@ -147,10 +180,21 @@ export const togglePublishNotice = async (req: AuthenticatedRequest, res: Respon
     }
 
     const updatedNotice = await storage.updateNotice(id, { published });
-    res.status(200).json({ message: `Notice ${published ? 'published' : 'unpublished'} successfully`, notice: updatedNotice });
+    const deploymentTriggered = storage.isMongoConnected()
+      ? await triggerVercelDeployment('Notices')
+      : false;
+
+    res.status(200).json({
+      success: true,
+      deploymentTriggered,
+      message: deploymentTriggered
+        ? `Notice ${published ? 'published' : 'unpublished'} successfully. Website deployment has started. Changes will be live shortly.`
+        : `Notice ${published ? 'published' : 'unpublished'} successfully, but automatic deployment could not be started.`,
+      notice: updatedNotice
+    });
   } catch (error: any) {
     console.error('Error toggling publish status:', error);
-    res.status(500).json({ error: 'Internal Server Error', message: error.message });
+    res.status(500).json({ error: 'Internal Server Error', message: 'Unable to update notice publish status.' });
   }
 };
 
@@ -171,9 +215,20 @@ export const togglePinNotice = async (req: AuthenticatedRequest, res: Response):
     }
 
     const updatedNotice = await storage.updateNotice(id, { pinned });
-    res.status(200).json({ message: `Notice ${pinned ? 'pinned' : 'unpinned'} successfully`, notice: updatedNotice });
+    const deploymentTriggered = storage.isMongoConnected()
+      ? await triggerVercelDeployment('Notices')
+      : false;
+
+    res.status(200).json({
+      success: true,
+      deploymentTriggered,
+      message: deploymentTriggered
+        ? `Notice ${pinned ? 'pinned' : 'unpinned'} successfully. Website deployment has started. Changes will be live shortly.`
+        : `Notice ${pinned ? 'pinned' : 'unpinned'} successfully, but automatic deployment could not be started.`,
+      notice: updatedNotice
+    });
   } catch (error: any) {
     console.error('Error toggling pin status:', error);
-    res.status(500).json({ error: 'Internal Server Error', message: error.message });
+    res.status(500).json({ error: 'Internal Server Error', message: 'Unable to update notice pin status.' });
   }
 };

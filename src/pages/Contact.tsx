@@ -58,7 +58,7 @@ export const Contact: React.FC = () => {
     <div className="bg-white">
       <SEOHelper
         title={`Contact & Admissions Helpdesk | ${settings.collegeName}`}
-        description={`Get in touch with the admissions office and administration at ${settings.collegeName}, Aliganj, Lucknow. View phone numbers, emails, office hours, and official Google Maps location.`}
+        description={`Get in touch with the admissions office and administration at ${settings.collegeName}, Chandrawal, Lucknow. View phone numbers, emails, office hours, and official Google Maps location.`}
       />
       {/* Page Header */}
       <section className="relative py-20 bg-slate-950 text-white overflow-hidden">
@@ -325,7 +325,7 @@ export const Contact: React.FC = () => {
           <SectionHeading
             badge="Navigation & Routes"
             title="Locate Us On The Map"
-            subtitle="Plan your drive to Sector C, Aliganj, Lucknow. Easily accessible via public transit."
+            subtitle="Plan your drive to Sector C, Chandrawal, Lucknow. Easily accessible via public transit."
           />
 
           <div className="bg-slate-200/60 rounded-3xl h-[450px] overflow-hidden border border-slate-200/80 relative shadow-xs mt-10">

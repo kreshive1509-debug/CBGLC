@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Scale, Award, BookOpen, Quote, Shield, Calendar, Lightbulb, GraduationCap } from 'lucide-react';
+import { Scale, Award, BookOpen, Quote, Shield, Lightbulb, GraduationCap } from 'lucide-react';
 import { useData } from '../context/DataContext';
 import { useAdmissionModal } from '../context/AdmissionContext';
 import { FOUNDER_INFO } from '../constants/data';
@@ -8,29 +8,6 @@ import { FOUNDER_INFO } from '../constants/data';
 export const FounderMessage: React.FC = () => {
   const { openModal } = useAdmissionModal();
   const { settings, founder } = useData();
-
-  const milestones = [
-    {
-      year: "1960s - 1980s",
-      title: "Championing Public Service",
-      desc: "Dr. Chandra Bhanu Gupta dedicated decades to shaping academic policy, legal reforms, and educational empowerment structures across North India."
-    },
-    {
-      year: "2005",
-      title: "Founding CBGLC",
-      desc: `Envisioned and established ${settings.collegeName} in Aliganj, Lucknow, with the noble goal of making elite professional legal education accessible.`
-    },
-    {
-      year: "2012",
-      title: "Moot Courtroom & Infrastructure Launch",
-      desc: "Supervised the creation of our modern wood-paneled championship Moot Courtroom and digital law library wings to ensure practical exposure."
-    },
-    {
-      year: "Legacy & Beyond",
-      title: "Upholding Justice and Ethics",
-      desc: "Our alumni community now spans judicial magistrates, high court advocates, corporate counsel leaders, and public interest litigants."
-    }
-  ];
 
   const visionPillars = [
     {
@@ -169,57 +146,6 @@ export const FounderMessage: React.FC = () => {
 
             </div>
 
-          </div>
-        </div>
-      </section>
-
-      {/* Milestones & Timeline Section */}
-      <section className="py-20 bg-slate-50 border-t border-b border-slate-100 px-4">
-        <div className="max-w-4xl mx-auto">
-          <div className="text-center space-y-3 mb-16">
-            <span className="text-xs font-bold uppercase tracking-widest text-gold bg-primary px-3.5 py-1 rounded-full">
-              CHRONICLE OF EXCELLENCE
-            </span>
-            <h3 className="font-serif text-2xl sm:text-3.5xl font-extrabold text-slate-900">
-              Founder's Historical Milestone
-            </h3>
-            <p className="text-xs sm:text-sm text-slate-500 max-w-md mx-auto leading-relaxed">
-              A chronological overview representing the foundation, updates, and milestones guided by our visionary leadership.
-            </p>
-          </div>
-
-          {/* Timeline UI */}
-          <div className="relative border-l-2 border-slate-200 ml-4 md:ml-32 space-y-12">
-            {milestones.map((milestone, idx) => (
-              <motion.div
-                key={idx}
-                initial={{ opacity: 0, x: -20 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                viewport={{ once: true }}
-                className="relative pl-6 md:pl-10"
-              >
-                {/* Year tag positioned on left for wider screens */}
-                <div className="hidden md:block absolute right-full mr-10 top-0 text-right">
-                  <span className="font-serif font-extrabold text-primary text-lg">{milestone.year}</span>
-                </div>
-                
-                {/* Timeline Circle Bullet */}
-                <div className="absolute -left-[11px] top-1.5 w-5 h-5 rounded-full border-4 border-white bg-gold shadow-sm" />
-
-                {/* Content Box */}
-                <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-2xs space-y-2">
-                  <span className="inline-block md:hidden font-serif font-extrabold text-primary text-sm mb-1">
-                    {milestone.year}
-                  </span>
-                  <h4 className="font-serif font-bold text-slate-800 text-base leading-tight">
-                    {milestone.title}
-                  </h4>
-                  <p className="text-slate-500 text-xs sm:text-sm leading-relaxed">
-                    {milestone.desc}
-                  </p>
-                </div>
-              </motion.div>
-            ))}
           </div>
         </div>
       </section>

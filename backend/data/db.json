@@ -11,7 +11,7 @@
     "googleMapUrl": "https://maps.google.com/?q=Chandra+Bhanu+Gupta+Law+College+Lucknow",
     "googleDriveLogoUrl": "https://images.unsplash.com/photo-1589829545856-d10d557cf95f?auto=format&fit=crop&w=80&q=80",
     "googleDriveBrochureUrl": "https://drive.google.com/file/d/1PlaceholderBrochureID/view?usp=sharing",
-    "footerText": "Chandra Bhanu Gupta Law College (Established in 2005) is affiliated to University of Lucknow and approved by the Bar Council of India (BCI). Sector 'C', Aliganj, Lucknow - 226024, Uttar Pradesh, India.",
+    "footerText": "Chandra Bhanu Gupta Law College (Established in 2005) is affiliated to University of Lucknow and approved by the Bar Council of India (BCI). Sector 'C', Chandrawal, Lucknow - 226024, Uttar Pradesh, India.",
     "admissionStatus": "Closed",
     "officeHours": "Monday - Saturday: 9:00 AM - 4:00 PM",
     "emergencyContact": "+91-9415012345",
@@ -93,5 +93,36 @@
     "breakingNewsStatus": true,
     "breakingNewsText": "Admissions Open"
   },
-  "enquiries": []
+  "enquiries": [],
+  "galleryImages": [],
+  "leaders": [
+    {
+      "_id": "l_1784616204755_f",
+      "photoUrl": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80",
+      "fullName": "Dr. Chandra Bhanu Gupta",
+      "designation": "Visionary Founder & Renowned Legal Educationist",
+      "editorialMessage": "I welcome you to Chandra Bhanu Gupta Law College, an institution established on the pillars of intellectual integrity, pursuit of excellence, and social justice. We believe that legal professionals are the architects of a civil society. Hence, our educational model does not simply teach laws; it instills a passion for absolute justice, high ethical reasoning, and comprehensive civic responsibility. Our graduates are trained to be courageous champions of truth in the courtrooms, boardroom leaders, and empathetic community developers. Here, we build advocates who carry legal precision in their minds and human values in their hearts.",
+      "buttonText": "Read Full Message",
+      "buttonUrl": "/founder",
+      "published": true,
+      "featured": true,
+      "displayOrder": 0,
+      "createdAt": "2026-07-21T06:43:24.755Z",
+      "updatedAt": "2026-07-21T06:43:24.755Z"
+    },
+    {
+      "_id": "l_1784616204755_m",
+      "photoUrl": "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&w=400&q=80",
+      "fullName": "prof. S.P. Singh",
+      "designation": "Manager & Chairperson, Governing Council",
+      "editorialMessage": "At Chandra Bhanu Gupta Law College, our goal is to maintain a learning environment that matches the demands of a rapidly changing global landscape. Modern law has expanded far beyond classic courtrooms—it encompasses international commerce, cyber jurisprudence, intellectual property rights, and complex environment protocols. We have consistently upgraded our curriculum and campus with electronic libraries, interactive smart classrooms, and moot court tournaments. We provide our students with premium mentoring, strong placement preparations, and judicial coaching. I invite you to join us and embark on a rewarding journey that transforms your potential into an elite legal career.",
+      "buttonText": "Read Full Message",
+      "buttonUrl": "/manager",
+      "published": true,
+      "featured": false,
+      "displayOrder": 1,
+      "createdAt": "2026-07-21T06:43:24.755Z",
+      "updatedAt": "2026-07-21T06:43:24.755Z"
+    }
+  ]
 }

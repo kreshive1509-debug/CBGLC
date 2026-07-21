@@ -26,6 +26,7 @@ import { AdminDashboard } from './pages/admin/AdminDashboard';
 import { AdmissionEnquiries } from './pages/admin/AdmissionEnquiries';
 import { AdmissionManagement } from './pages/admin/AdmissionManagement';
 import { WebsiteSettingsPage } from './pages/admin/WebsiteSettingsPage';
+import { CMSManagement } from './pages/admin/CMSManagement';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading } = useAdminAuth();
@@ -103,6 +104,14 @@ export default function App() {
                 element={
                   <ProtectedRoute>
                     <WebsiteSettingsPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/cms"
+                element={
+                  <ProtectedRoute>
+                    <CMSManagement />
                   </ProtectedRoute>
                 }
               />

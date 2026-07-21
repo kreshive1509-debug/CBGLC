@@ -17,6 +17,48 @@ const LeaderModel: any = Leader;
 
 const LOCAL_DB_PATH = path.join(process.cwd(), 'backend', 'data', 'db.json');
 
+const toStringArray = (value: any): string[] => {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((item) => {
+      if (typeof item === 'string') return item.trim();
+      if (item && typeof item === 'object') {
+        return String(item.name ?? item.text ?? '').trim();
+      }
+      return '';
+    })
+    .filter(Boolean);
+};
+
+const normalizeCourseEntry = (course: any, index: number) => ({
+  id: course?.id || `course-${index}`,
+  name: course?.name || course?.title || '',
+  shortDescription: course?.shortDescription || course?.description || '',
+  longDescription: course?.longDescription || course?.description || '',
+  seats: typeof course?.seats === 'number' ? course.seats : Number(course?.seats) || 0,
+  duration: course?.duration || '',
+  semester: course?.semester || '',
+  badge: course?.badge || course?.programBadge || course?.type || '',
+  imageUrl: course?.imageUrl || course?.bannerImageUrl || course?.coverImageUrl || '',
+  status: course?.status === 'Draft' ? 'Draft' : 'Published',
+  displayOrder: typeof course?.displayOrder === 'number' ? course.displayOrder : index,
+  admissionCriteria: typeof course?.admissionCriteria === 'string' ? course.admissionCriteria : '',
+  eligibility: typeof course?.eligibility === 'string' ? course.eligibility : '',
+  minimumPercentage: typeof course?.minimumPercentage === 'string' ? course.minimumPercentage : '',
+  subjects: toStringArray(course?.subjects),
+  careerOpportunities: toStringArray(course?.careerOpportunities),
+  coreSubjects: toStringArray(course?.coreSubjects),
+  curriculumPdfUrl: course?.curriculumPdfUrl || course?.curriculumPdf || '',
+  applyButtonText: course?.applyButtonText || 'Apply Now'
+});
+
+const normalizeSettingsPayload = (updateData: any) => ({
+  ...updateData,
+  courses: Array.isArray(updateData?.courses)
+    ? updateData.courses.map((course: any, index: number) => normalizeCourseEntry(course, index))
+    : updateData?.courses,
+});
+
 // Helper to read local JSON DB
 const readLocalDB = () => {
   try {
@@ -59,6 +101,32 @@ const writeLocalDB = (data: any) => {
   }
 };
 
+const normalizeLeaderRecord = (leader: any) => {
+  const fullName = String(leader?.fullName || leader?.name || '').trim();
+  const designation = String(leader?.designation || '').trim();
+  const membership = String(leader?.membership || '').trim() || (
+    designation.toLowerCase().includes('founder') || fullName.toLowerCase().includes('founder')
+      ? 'Founder'
+      : designation.toLowerCase().includes('manager') || fullName.toLowerCase().includes('manager')
+        ? 'Manager'
+        : 'Member'
+  );
+
+  return {
+    ...leader,
+    fullName,
+    designation,
+    membership,
+    photoUrl: leader?.photoUrl || '',
+    editorialMessage: leader?.editorialMessage || '',
+    published: leader?.published ?? true,
+    featured: leader?.featured ?? false,
+    displayOrder: typeof leader?.displayOrder === 'number' ? leader.displayOrder : 0,
+    createdAt: leader?.createdAt || new Date().toISOString(),
+    updatedAt: leader?.updatedAt || leader?.createdAt || new Date().toISOString()
+  };
+};
+
 export const storage = {
   // --- SETTINGS ---
   async getSettings() {
@@ -76,18 +144,19 @@ export const storage = {
   },
 
   async updateSettings(updateData: any) {
+    const normalizedUpdate = normalizeSettingsPayload(updateData);
     if (isMongoConnected()) {
       let settings = await Settings.findOne();
       if (!settings) {
-        settings = new Settings(updateData);
+        settings = new Settings(normalizedUpdate);
       } else {
-        Object.assign(settings, updateData);
+        Object.assign(settings, normalizedUpdate);
       }
       await settings.save();
       return settings;
     } else {
       const db = readLocalDB();
-      db.settings = { ...db.settings, ...updateData };
+      db.settings = { ...db.settings, ...normalizedUpdate };
       writeLocalDB(db);
       return db.settings;
     }
@@ -362,7 +431,7 @@ export const storage = {
   // --- LEADERS ---
   async getLeaders() {
     if (isMongoConnected()) {
-      let leaders = await Leader.find().sort({ displayOrder: 1, createdAt: -1 });
+      let leaders = await Leader.find().sort({ createdAt: 1, _id: 1 });
       if (leaders.length === 0) {
         const founder = await this.getFounder();
         const manager = await this.getManager();
@@ -372,6 +441,7 @@ export const storage = {
             photoUrl: founder.googleDrivePhotoUrl || '',
             fullName: founder.name || 'Founder',
             designation: founder.designation || 'Founder',
+            membership: 'Founder',
             editorialMessage: founder.message || '',
             buttonText: 'Read Full Message',
             buttonUrl: '/founder',
@@ -385,6 +455,7 @@ export const storage = {
             photoUrl: manager.googleDrivePhotoUrl || '',
             fullName: manager.name || 'Manager',
             designation: manager.designation || 'Manager',
+            membership: 'Manager',
             editorialMessage: manager.message || '',
             buttonText: 'Read Full Message',
             buttonUrl: '/manager',
@@ -395,10 +466,14 @@ export const storage = {
         }
         if (seedLeaders.length > 0) {
           leaders = await Leader.insertMany(seedLeaders);
-          return leaders.sort((a: any, b: any) => a.displayOrder - b.displayOrder);
+          return leaders
+            .map((leader: any) => normalizeLeaderRecord(leader.toObject ? leader.toObject() : leader))
+            .sort((a: any, b: any) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
         }
       }
-      return leaders;
+      return leaders
+        .map((leader: any) => normalizeLeaderRecord(leader.toObject ? leader.toObject() : leader))
+        .sort((a: any, b: any) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
     } else {
       const db = readLocalDB();
       if (!db.leaders || db.leaders.length === 0) {
@@ -411,6 +486,7 @@ export const storage = {
             photoUrl: founder.googleDrivePhotoUrl || '',
             fullName: founder.name || 'Founder',
             designation: founder.designation || 'Founder',
+            membership: 'Founder',
             editorialMessage: founder.message || '',
             buttonText: 'Read Full Message',
             buttonUrl: '/founder',
@@ -427,6 +503,7 @@ export const storage = {
             photoUrl: manager.googleDrivePhotoUrl || '',
             fullName: manager.name || 'Manager',
             designation: manager.designation || 'Manager',
+            membership: 'Manager',
             editorialMessage: manager.message || '',
             buttonText: 'Read Full Message',
             buttonUrl: '/manager',
@@ -442,17 +519,21 @@ export const storage = {
           writeLocalDB(db);
         }
       }
-      return (db.leaders || []).sort((a: any, b: any) => a.displayOrder - b.displayOrder || new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      return (db.leaders || [])
+        .map((leader: any) => normalizeLeaderRecord(leader))
+        .sort((a: any, b: any) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
     }
   },
 
   async getLeaderById(id: string) {
     if (isMongoConnected()) {
       if (!mongoose.Types.ObjectId.isValid(id)) return null;
-      return await LeaderModel.findById(id).exec();
+      const leader = await LeaderModel.findById(id).exec();
+      return leader ? normalizeLeaderRecord(leader.toObject ? leader.toObject() : leader) : null;
     } else {
       const db = readLocalDB();
-      return db.leaders.find((leader: any) => leader._id === id) || null;
+      const leader = db.leaders.find((entry: any) => entry._id === id) || null;
+      return leader ? normalizeLeaderRecord(leader) : null;
     }
   },
 
@@ -469,14 +550,15 @@ export const storage = {
     if (isMongoConnected()) {
       const leader = new Leader(leaderData);
       await leader.save();
-      return leader;
+      return normalizeLeaderRecord(leader.toObject ? leader.toObject() : leader);
     } else {
       const db = readLocalDB();
       const newLeader = {
         _id: 'l_' + Date.now(),
-        photoUrl: leaderData.photoUrl,
+        photoUrl: leaderData.photoUrl || '',
         fullName: leaderData.fullName,
         designation: leaderData.designation,
+        membership: leaderData.membership || 'Member',
         editorialMessage: leaderData.editorialMessage,
         buttonText: leaderData.buttonText || '',
         buttonUrl: leaderData.buttonUrl || '',
@@ -488,14 +570,15 @@ export const storage = {
       };
       db.leaders.push(newLeader);
       writeLocalDB(db);
-      return newLeader;
+      return normalizeLeaderRecord(newLeader);
     }
   },
 
   async updateLeader(id: string, updateData: any) {
     if (isMongoConnected()) {
       if (!mongoose.Types.ObjectId.isValid(id)) return null;
-      return await LeaderModel.findByIdAndUpdate(id, updateData, { new: true }).exec();
+      const updated = await LeaderModel.findByIdAndUpdate(id, updateData, { new: true }).exec();
+      return updated ? normalizeLeaderRecord(updated.toObject ? updated.toObject() : updated) : null;
     } else {
       const db = readLocalDB();
       const index = db.leaders.findIndex((leader: any) => leader._id === id);
@@ -507,7 +590,7 @@ export const storage = {
       };
       db.leaders[index] = updated;
       writeLocalDB(db);
-      return updated;
+      return normalizeLeaderRecord(updated);
     }
   },
 

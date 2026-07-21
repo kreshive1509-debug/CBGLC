@@ -1,6 +1,6 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ZoomIn } from 'lucide-react';
+import { ZoomIn, ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { useData } from '../context/DataContext';
 import { GALLERY_IMAGES } from '../constants/data';
 
@@ -8,6 +8,8 @@ export const Gallery: React.FC = () => {
   const { galleryImages } = useData();
   const [activeCategory, setActiveCategory] = useState('All');
   const [selectedImage, setSelectedImage] = useState<any | null>(null);
+  const [touchStart, setTouchStart] = useState(0);
+  const [touchEnd, setTouchEnd] = useState(0);
 
   const images = galleryImages.length ? galleryImages : GALLERY_IMAGES;
   const categories = useMemo(() => {
@@ -22,6 +24,62 @@ export const Gallery: React.FC = () => {
     }
     return images.filter((img: any) => img.category?.toLowerCase() === activeCategory.toLowerCase());
   }, [activeCategory, images]);
+
+  // Find current image index for navigation
+  const currentImageIndex = useMemo(() => {
+    if (!selectedImage) return -1;
+    return images.findIndex((img: any) => (img._id || img.id) === (selectedImage._id || selectedImage.id));
+  }, [selectedImage, images]);
+
+  // Navigation handlers
+  const goToNext = () => {
+    if (currentImageIndex < images.length - 1) {
+      setSelectedImage(images[currentImageIndex + 1]);
+    } else {
+      setSelectedImage(images[0]); // Loop back to first
+    }
+  };
+
+  const goToPrev = () => {
+    if (currentImageIndex > 0) {
+      setSelectedImage(images[currentImageIndex - 1]);
+    } else {
+      setSelectedImage(images[images.length - 1]); // Loop to last
+    }
+  };
+
+  // Keyboard navigation
+  useEffect(() => {
+    if (!selectedImage) return;
+
+    const handleKeyPress = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowRight') goToNext();
+      if (e.key === 'ArrowLeft') goToPrev();
+      if (e.key === 'Escape') setSelectedImage(null);
+    };
+
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
+  }, [selectedImage, currentImageIndex, images.length]);
+
+  // Touch swipe handler
+  const onTouchStart = (e: React.TouchEvent) => {
+    setTouchStart(e.targetTouches[0].clientX);
+  };
+
+  const onTouchEnd = (e: React.TouchEvent) => {
+    setTouchEnd(e.changedTouches[0].clientX);
+    handleSwipe();
+  };
+
+  const handleSwipe = () => {
+    if (touchStart - touchEnd > 50) {
+      goToNext(); // Swiped left
+    }
+    if (touchEnd - touchStart > 50) {
+      goToPrev(); // Swiped right
+    }
+  };
 
   return (
     <div className="bg-white">
@@ -92,27 +150,33 @@ export const Gallery: React.FC = () => {
                   transition={{ duration: 0.4 }}
                   whileHover={{ y: -5 }}
                   onClick={() => setSelectedImage(img)}
-                  className="relative group overflow-hidden rounded-2xl shadow-sm hover:shadow-xl border border-slate-100 aspect-4/3 bg-slate-100 cursor-pointer"
+                  className="relative group overflow-hidden rounded-2xl shadow-sm hover:shadow-2xl border border-slate-100 aspect-4/3 bg-slate-100 cursor-pointer"
                 >
                   <img
                     src={img.url}
                     alt={img.title}
-                    className="w-full h-full object-cover group-hover:scale-108 transition-transform duration-700"
+                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
                     referrerPolicy="no-referrer"
                   />
                   
-                  {/* Glassmorphic Overlay on Hover */}
-                  <div className="absolute inset-0 bg-primary/80 backdrop-blur-xs opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-between p-6 text-white z-10">
+                  {/* Premium Glassmorphic Overlay on Hover */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-primary/80 via-primary/40 to-transparent backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-between p-6 text-white z-10">
                     <div className="flex justify-end">
-                      <div className="w-10 h-10 rounded-full bg-white/15 flex items-center justify-center text-white backdrop-blur-md">
+                      <motion.div 
+                        whileHover={{ scale: 1.1 }}
+                        className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center text-white backdrop-blur-md border border-white/30 shadow-lg"
+                      >
                         <ZoomIn className="w-5 h-5" />
-                      </div>
+                      </motion.div>
                     </div>
                     <div>
-                      <span className="text-[10px] uppercase text-gold font-bold tracking-widest">{img.category}</span>
-                      <h4 className="text-base font-serif font-bold mt-1 leading-tight">{img.title}</h4>
+                      <span className="text-[10px] uppercase text-gold font-bold tracking-widest drop-shadow-sm">{img.category}</span>
+                      <h4 className="text-base font-serif font-bold mt-1 leading-tight drop-shadow-sm">{img.title}</h4>
                     </div>
                   </div>
+
+                  {/* Shadow animation */}
+                  <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none ring-2 ring-primary/50 shadow-[inset_0_0_30px_rgba(79,70,229,0.2)]" />
                 </motion.div>
               ))}
             </AnimatePresence>
@@ -121,57 +185,113 @@ export const Gallery: React.FC = () => {
         </div>
       </section>
 
-      {/* Lightbox / Enlarged View Modal */}
+      {/* Premium Lightbox / Fullscreen Modal */}
       <AnimatePresence>
         {selectedImage && (
-          <div className="fixed inset-0 z-100 flex items-center justify-center p-4">
-            {/* Backdrop */}
+          <div 
+            className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            onTouchStart={onTouchStart}
+            onTouchEnd={onTouchEnd}
+          >
+            {/* Backdrop with blur */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setSelectedImage(null)}
-              className="fixed inset-0 bg-slate-900/90 backdrop-blur-md"
+              className="fixed inset-0 bg-slate-950/95 backdrop-blur-lg"
             />
 
-            {/* Content box */}
+            {/* Lightbox Content */}
             <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="relative max-w-4xl w-full bg-white rounded-2xl overflow-hidden shadow-2xl z-10 border border-slate-100"
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              transition={{ type: 'spring', damping: 20, stiffness: 300 }}
+              className="relative max-w-5xl w-full z-10"
             >
-              <div className="relative aspect-16/10 sm:aspect-16/9 bg-slate-950">
-                <img
-                  src={selectedImage.url}
-                  alt={selectedImage.title}
-                  className="w-full h-full object-contain"
-                  referrerPolicy="no-referrer"
-                />
-                
-                {/* Close Button overlay */}
-                <button
-                  onClick={() => setSelectedImage(null)}
-                  className="absolute top-4 right-4 w-10 h-10 bg-slate-900/60 hover:bg-slate-950 text-white rounded-full flex items-center justify-center backdrop-blur-md cursor-pointer transition-colors"
-                >
-                  ✕
-                </button>
+              {/* Main Image Container */}
+              <div className="relative bg-slate-900 rounded-2xl overflow-hidden shadow-2xl border border-slate-700">
+                <div className="relative aspect-video sm:aspect-[16/10] bg-slate-950">
+                  <motion.img
+                    key={selectedImage._id || selectedImage.id}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    src={selectedImage.url}
+                    alt={selectedImage.title}
+                    className="w-full h-full object-contain"
+                    referrerPolicy="no-referrer"
+                  />
+                  
+                  {/* Close Button */}
+                  <motion.button
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => setSelectedImage(null)}
+                    className="absolute top-4 right-4 w-10 h-10 bg-slate-800/70 hover:bg-slate-700 text-white rounded-full flex items-center justify-center backdrop-blur-md cursor-pointer transition-all border border-slate-600"
+                  >
+                    <X className="w-5 h-5" />
+                  </motion.button>
+
+                  {/* Navigation Arrows */}
+                  {images.length > 1 && (
+                    <>
+                      <motion.button
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={goToPrev}
+                        className="absolute left-4 top-1/2 -translate-y-1/2 w-12 h-12 bg-slate-800/70 hover:bg-slate-700 text-white rounded-full flex items-center justify-center backdrop-blur-md cursor-pointer transition-all border border-slate-600"
+                      >
+                        <ChevronLeft className="w-6 h-6" />
+                      </motion.button>
+
+                      <motion.button
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={goToNext}
+                        className="absolute right-4 top-1/2 -translate-y-1/2 w-12 h-12 bg-slate-800/70 hover:bg-slate-700 text-white rounded-full flex items-center justify-center backdrop-blur-md cursor-pointer transition-all border border-slate-600"
+                      >
+                        <ChevronRight className="w-6 h-6" />
+                      </motion.button>
+                    </>
+                  )}
+
+                  {/* Image Counter */}
+                  {images.length > 1 && (
+                    <div className="absolute bottom-4 left-4 px-3 py-1.5 bg-slate-800/70 text-white text-xs font-bold rounded-full backdrop-blur-md border border-slate-600">
+                      {currentImageIndex + 1} / {images.length}
+                    </div>
+                  )}
+                </div>
+
+                {/* Info Footer */}
+                <div className="p-6 bg-gradient-to-r from-slate-900 to-slate-800 border-t border-slate-700 flex justify-between items-center flex-wrap gap-4">
+                  <div>
+                    <span className="text-xs uppercase text-gold font-bold tracking-wider">{selectedImage.category}</span>
+                    <h3 className="font-serif font-extrabold text-slate-100 text-lg sm:text-xl mt-1 leading-tight">
+                      {selectedImage.title}
+                    </h3>
+                  </div>
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => setSelectedImage(null)}
+                    className="px-6 py-2.5 bg-primary hover:bg-primary/90 text-white text-xs font-bold uppercase tracking-wider rounded-lg shadow-lg cursor-pointer transition-all"
+                  >
+                    Close (ESC)
+                  </motion.button>
+                </div>
               </div>
 
-              <div className="p-6 bg-white border-t border-slate-100 flex justify-between items-center flex-wrap gap-4">
-                <div>
-                  <span className="text-xs uppercase text-gold font-bold tracking-wider">{selectedImage.category}</span>
-                  <h3 className="font-serif font-extrabold text-slate-800 text-lg sm:text-xl mt-1 leading-tight">
-                    {selectedImage.title}
-                  </h3>
+              {/* Navigation Hints */}
+              {images.length > 1 && (
+                <div className="mt-4 text-center">
+                  <p className="text-white/60 text-xs font-semibold">
+                    Use ← → or swipe to navigate • ESC to close
+                  </p>
                 </div>
-                <button
-                  onClick={() => setSelectedImage(null)}
-                  className="px-6 py-2.5 bg-primary hover:bg-primary-light text-white text-xs font-bold uppercase tracking-wider rounded-lg shadow-sm cursor-pointer"
-                >
-                  Close View
-                </button>
-              </div>
+              )}
             </motion.div>
           </div>
         )}

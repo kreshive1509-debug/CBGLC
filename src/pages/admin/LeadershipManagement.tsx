@@ -15,15 +15,54 @@ import {
 } from 'lucide-react';
 
 const DEFAULT_LEADER_FORM = {
-  photoUrl: '',
   fullName: '',
   designation: '',
+  membership: 'Member',
+  photoUrl: '',
   editorialMessage: '',
-  buttonText: 'Read Full Message',
-  buttonUrl: '',
   published: true,
-  featured: false,
   displayOrder: 0
+};
+
+const buildLegacyLeaderPayload = (formData: typeof DEFAULT_LEADER_FORM, existingLeader?: any) => {
+  const fullName = String(formData.fullName || '').trim();
+  const designation = String(formData.designation || '').trim();
+  const membership = String(formData.membership || '').trim();
+  const photoUrl = String(formData.photoUrl || '').trim();
+  const editorialMessage = String(formData.editorialMessage || '').trim();
+
+  const legacyPhotoUrl =
+    (existingLeader?.photoUrl && String(existingLeader.photoUrl).trim()) ||
+    photoUrl ||
+    `https://placeholder.local/leader-${encodeURIComponent(fullName.toLowerCase() || 'member')}`;
+
+  const legacyMessage =
+    editorialMessage ||
+    `${fullName} - ${designation} (${membership})`;
+
+  return {
+    fullName,
+    designation,
+    membership,
+    photoUrl: legacyPhotoUrl,
+    editorialMessage: legacyMessage,
+    published: formData.published,
+    displayOrder: formData.displayOrder,
+  };
+};
+
+const resolveMembership = (leader: any) => {
+  const explicitMembership = String(leader?.membership || '').trim();
+  if (explicitMembership) return explicitMembership;
+
+  const message = String(leader?.editorialMessage || '').trim();
+  const match = message.match(/\(([^()]+)\)\s*$/);
+  if (match?.[1]) return match[1].trim();
+
+  const designation = String(leader?.designation || '').trim().toLowerCase();
+  if (designation.includes('founder')) return 'Founder';
+  if (designation.includes('manager')) return 'Manager';
+  return 'Member';
 };
 
 export function LeadershipManagement({ notify }: { notify: (msg: string, isError?: boolean) => void }) {
@@ -40,7 +79,7 @@ export function LeadershipManagement({ notify }: { notify: (msg: string, isError
   const fetchLeaders = async () => {
     setIsLoading(true);
     try {
-      const res = await fetch('/api/leaders');
+      const res = await fetch('/api/leaders', { cache: 'no-store' });
       if (res.ok) {
         const data = await res.json();
         setLeaders(data);
@@ -63,13 +102,20 @@ export function LeadershipManagement({ notify }: { notify: (msg: string, isError
       .filter((leader) => {
         const term = searchTerm.toLowerCase();
         if (!searchTerm) return true;
+        const fullName = String(leader.fullName || '').toLowerCase();
+        const designation = String(leader.designation || '').toLowerCase();
+        const membership = resolveMembership(leader).toLowerCase();
         return (
-          leader.fullName.toLowerCase().includes(term) ||
-          leader.designation.toLowerCase().includes(term) ||
-          leader.editorialMessage.toLowerCase().includes(term)
+          fullName.includes(term) ||
+          designation.includes(term) ||
+          membership.includes(term)
         );
       })
-      .sort((a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0));
+      .sort((a, b) => {
+        const aCreated = new Date(a.createdAt || 0).getTime();
+        const bCreated = new Date(b.createdAt || 0).getTime();
+        return aCreated - bCreated || (a.displayOrder ?? 0) - (b.displayOrder ?? 0);
+      });
   }, [leaders, searchTerm]);
 
   const pageSize = 6;
@@ -84,14 +130,12 @@ export function LeadershipManagement({ notify }: { notify: (msg: string, isError
   const openEdit = (leader: any) => {
     setEditingLeader(leader);
     setFormData({
-      photoUrl: leader.photoUrl,
-      fullName: leader.fullName,
-      designation: leader.designation,
-      editorialMessage: leader.editorialMessage,
-      buttonText: leader.buttonText || 'Read Full Message',
-      buttonUrl: leader.buttonUrl || '',
+      fullName: leader.fullName || '',
+      designation: leader.designation || '',
+      membership: resolveMembership(leader),
+      photoUrl: leader.photoUrl || '',
+      editorialMessage: leader.editorialMessage || '',
       published: leader.published ?? true,
-      featured: leader.featured ?? false,
       displayOrder: leader.displayOrder ?? 0
     });
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -99,8 +143,12 @@ export function LeadershipManagement({ notify }: { notify: (msg: string, isError
 
   const saveLeader = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.photoUrl.trim() || !formData.fullName.trim() || !formData.designation.trim() || !formData.editorialMessage.trim()) {
-      notify('Photo URL, full name, designation, and message are required.', true);
+    if (
+      !String(formData.fullName || '').trim() ||
+      !String(formData.designation || '').trim() ||
+      !String(formData.membership || '').trim()
+    ) {
+      notify('Full name, designation, and membership are required.', true);
       return;
     }
 
@@ -108,13 +156,14 @@ export function LeadershipManagement({ notify }: { notify: (msg: string, isError
     try {
       const endpoint = editingLeader ? `/api/leaders/${editingLeader._id}` : '/api/leaders';
       const method = editingLeader ? 'PUT' : 'POST';
+      const payload = buildLegacyLeaderPayload(formData, editingLeader);
       const res = await fetch(endpoint, {
         method,
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`
         },
-        body: JSON.stringify(formData)
+        body: JSON.stringify(payload)
       });
       const data = await res.json();
       if (!res.ok) {
@@ -122,7 +171,7 @@ export function LeadershipManagement({ notify }: { notify: (msg: string, isError
         return;
       }
       notify(editingLeader ? 'Leader updated successfully.' : 'Leader created successfully.');
-      fetchLeaders();
+      await fetchLeaders();
       resetForm();
     } catch (err: any) {
       notify(err.message || 'Network error while saving leader.', true);
@@ -208,8 +257,6 @@ export function LeadershipManagement({ notify }: { notify: (msg: string, isError
     }
   };
 
-  const featuredBadge = formData.featured ? 'Featured Record' : 'Standard Record';
-
   return (
     <div className="space-y-8">
       <div className="grid gap-6 xl:grid-cols-[1.3fr_1fr]">
@@ -217,30 +264,19 @@ export function LeadershipManagement({ notify }: { notify: (msg: string, isError
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
             <div>
               <p className="text-xs uppercase tracking-widest text-gold font-bold mb-2">Leadership Management</p>
-              <h3 className="text-xl font-extrabold text-slate-900">Create dynamic leader profiles</h3>
-              <p className="text-sm text-slate-500 mt-1">Maintain founder/manager legacy while adding unlimited leaders.</p>
+              <h3 className="text-xl font-extrabold text-slate-900">Create governing council records</h3>
+              <p className="text-sm text-slate-500 mt-1">Maintain founder and manager separately while adding council members as table records.</p>
             </div>
             <button
               onClick={resetForm}
               className="inline-flex items-center gap-2 px-4 py-2.5 bg-primary text-white rounded-full text-xs font-bold uppercase tracking-widest shadow-sm hover:bg-primary-dark transition-all"
             >
               <Plus className="w-4 h-4" />
-              New Leader
+              New Member
             </button>
           </div>
 
           <form onSubmit={saveLeader} className="space-y-4">
-            <div className="space-y-1">
-              <label className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Photo URL (ImgBB direct link)</label>
-              <input
-                type="url"
-                value={formData.photoUrl}
-                onChange={(e) => setFormData({ ...formData, photoUrl: e.target.value })}
-                placeholder="https://i.ibb.co/.../profile.jpg"
-                className="w-full px-4 py-3 border border-slate-200 rounded-2xl text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary/20"
-                required
-              />
-            </div>
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
               <div className="space-y-1">
                 <label className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Full Name</label>
@@ -254,7 +290,7 @@ export function LeadershipManagement({ notify }: { notify: (msg: string, isError
                 />
               </div>
               <div className="space-y-1">
-                <label className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Designation</label>
+                <label className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Occupation / Designation</label>
                 <input
                   type="text"
                   value={formData.designation}
@@ -266,34 +302,17 @@ export function LeadershipManagement({ notify }: { notify: (msg: string, isError
               </div>
             </div>
             <div className="space-y-1">
-              <label className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Editorial Message</label>
-              <textarea
-                value={formData.editorialMessage}
-                onChange={(e) => setFormData({ ...formData, editorialMessage: e.target.value })}
-                rows={6}
+              <label className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Membership</label>
+              <input
+                type="text"
+                value={formData.membership}
+                onChange={(e) => setFormData({ ...formData, membership: e.target.value })}
+                placeholder="Member / Trustee / Advisor"
                 className="w-full px-4 py-3 border border-slate-200 rounded-2xl text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary/20"
                 required
               />
             </div>
-            <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-              <div className="space-y-1">
-                <label className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Button Text</label>
-                <input
-                  type="text"
-                  value={formData.buttonText}
-                  onChange={(e) => setFormData({ ...formData, buttonText: e.target.value })}
-                  className="w-full px-4 py-3 border border-slate-200 rounded-2xl text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary/20"
-                />
-              </div>
-              <div className="space-y-1">
-                <label className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Button URL</label>
-                <input
-                  type="url"
-                  value={formData.buttonUrl}
-                  onChange={(e) => setFormData({ ...formData, buttonUrl: e.target.value })}
-                  className="w-full px-4 py-3 border border-slate-200 rounded-2xl text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary/20"
-                />
-              </div>
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
               <div className="space-y-1">
                 <label className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Display Order</label>
                 <input
@@ -305,7 +324,7 @@ export function LeadershipManagement({ notify }: { notify: (msg: string, isError
                 />
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
               <label className="inline-flex items-center gap-2 px-4 py-3 border border-slate-200 rounded-2xl cursor-pointer text-xs font-semibold text-slate-700">
                 <input
                   type="checkbox"
@@ -315,18 +334,6 @@ export function LeadershipManagement({ notify }: { notify: (msg: string, isError
                 />
                 Published
               </label>
-              <label className="inline-flex items-center gap-2 px-4 py-3 border border-slate-200 rounded-2xl cursor-pointer text-xs font-semibold text-slate-700">
-                <input
-                  type="checkbox"
-                  checked={formData.featured}
-                  onChange={(e) => setFormData({ ...formData, featured: e.target.checked })}
-                  className="form-checkbox h-4 w-4 text-primary"
-                />
-                Featured
-              </label>
-              <div className="col-span-2 flex items-center justify-end text-[11px] text-slate-500 font-semibold">
-                {featuredBadge}
-              </div>
             </div>
             <button
               type="submit"
@@ -349,7 +356,7 @@ export function LeadershipManagement({ notify }: { notify: (msg: string, isError
               <Search className="absolute left-3 top-3 text-slate-400" />
               <input
                 type="text"
-                placeholder="Search leaders by name or role"
+                placeholder="Search members by name or designation"
                 value={searchTerm}
                 onChange={(e) => { setSearchTerm(e.target.value); setPage(1); }}
                 className="pl-10 pr-4 py-3 w-full rounded-2xl border border-slate-200 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary/20"
@@ -361,9 +368,10 @@ export function LeadershipManagement({ notify }: { notify: (msg: string, isError
             <table className="min-w-full text-left text-xs text-slate-600">
               <thead className="bg-slate-50 text-slate-500 uppercase tracking-wider text-[10px]">
                 <tr>
-                  <th className="px-4 py-4">Photo</th>
+                  <th className="px-4 py-4">S.No</th>
                   <th className="px-4 py-4">Name</th>
-                  <th className="px-4 py-4">Designation</th>
+                  <th className="px-4 py-4">Occupation / Designation</th>
+                  <th className="px-4 py-4">Membership</th>
                   <th className="px-4 py-4">Order</th>
                   <th className="px-4 py-4">Status</th>
                   <th className="px-4 py-4 text-right">Actions</th>
@@ -373,9 +381,10 @@ export function LeadershipManagement({ notify }: { notify: (msg: string, isError
                 {isLoading ? (
                   Array.from({ length: 5 }).map((_, index) => (
                     <tr key={index} className="animate-pulse">
-                      <td className="px-4 py-4"><div className="h-10 w-10 bg-slate-200 rounded-full" /></td>
+                      <td className="px-4 py-4"><div className="h-4 w-8 bg-slate-200 rounded-xl" /></td>
                       <td className="px-4 py-4"><div className="h-4 w-32 bg-slate-200 rounded-xl" /></td>
                       <td className="px-4 py-4"><div className="h-4 w-24 bg-slate-200 rounded-xl" /></td>
+                      <td className="px-4 py-4"><div className="h-4 w-20 bg-slate-200 rounded-xl" /></td>
                       <td className="px-4 py-4"><div className="h-4 w-12 bg-slate-200 rounded-xl" /></td>
                       <td className="px-4 py-4"><div className="h-4 w-20 bg-slate-200 rounded-xl" /></td>
                       <td className="px-4 py-4 text-right"><div className="h-8 w-24 bg-slate-200 rounded-2xl mx-auto" /></td>
@@ -383,19 +392,20 @@ export function LeadershipManagement({ notify }: { notify: (msg: string, isError
                   ))
                 ) : pagedLeaders.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="p-8 text-center text-slate-400">No leaders found. Add the founder and manager first, then create additional leader records.</td>
+                    <td colSpan={7} className="p-8 text-center text-slate-400">No council members found. Add the governing council records to populate this table.</td>
                   </tr>
                 ) : (
-                  pagedLeaders.map((leader) => (
+                  pagedLeaders.map((leader, index) => (
                     <tr key={leader._id} className="hover:bg-slate-50 transition-colors">
-                      <td className="px-4 py-4 align-top">
-                        <div className="w-10 h-10 overflow-hidden rounded-full bg-slate-100">
-                          <img src={leader.photoUrl} alt={leader.fullName} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
-                        </div>
-                      </td>
+                      <td className="px-4 py-4 align-top font-semibold text-slate-700">{(page - 1) * pageSize + index + 1}</td>
                       <td className="px-4 py-4 align-top font-semibold text-slate-800">{leader.fullName}</td>
                       <td className="px-4 py-4 align-top">
                         <span className="inline-flex px-2 py-1 rounded-full bg-slate-100 text-slate-600 text-[10px] uppercase tracking-wider">{leader.designation}</span>
+                      </td>
+                      <td className="px-4 py-4 align-top">
+                        <span className="inline-flex px-2 py-1 rounded-full bg-primary/5 text-primary text-[10px] uppercase tracking-wider">
+                          {resolveMembership(leader)}
+                        </span>
                       </td>
                       <td className="px-4 py-4 align-top">{leader.displayOrder ?? 0}</td>
                       <td className="px-4 py-4 align-top">

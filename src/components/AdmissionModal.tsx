@@ -98,7 +98,7 @@ export const AdmissionModal: React.FC = () => {
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
             transition={{ type: "spring", duration: 0.5 }}
-            className="relative w-full max-w-2xl overflow-hidden bg-white rounded-2xl shadow-2xl border border-slate-100 z-10"
+            className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto overflow-x-hidden bg-white rounded-2xl shadow-2xl border border-slate-100 z-10"
           >
             {/* Header Highlight Bar */}
             <div className="h-2 bg-gradient-to-r from-primary to-gold" />
@@ -112,9 +112,9 @@ export const AdmissionModal: React.FC = () => {
             </button>
 
             {!isSubmitted ? (
-              <div className="p-8">
+              <div className="p-5 md:p-6">
                 {/* College Title */}
-                <div className="text-center mb-6">
+                <div className="text-center mb-4 md:mb-5">
                   <div className="inline-flex items-center justify-center w-12 h-12 bg-primary/5 rounded-full text-primary mb-3">
                     <ScaleIcon />
                   </div>
@@ -133,8 +133,8 @@ export const AdmissionModal: React.FC = () => {
                 </div>
 
                 {/* Form */}
-                <form onSubmit={handleSubmit} className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <form onSubmit={handleSubmit} className="space-y-3.5">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
                     {/* Full Name */}
                     <div>
                       <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">
@@ -146,7 +146,7 @@ export const AdmissionModal: React.FC = () => {
                         value={formData.fullName}
                         onChange={handleChange}
                         placeholder="John Doe"
-                        className={`w-full px-4 py-2.5 rounded-lg border text-sm focus:outline-none focus:ring-2 transition-all ${
+                        className={`w-full px-4 py-2 rounded-lg border text-sm focus:outline-none focus:ring-2 transition-all ${
                           errors.fullName
                             ? 'border-red-400 focus:ring-red-100 focus:border-red-400'
                             : 'border-slate-200 focus:ring-primary/20 focus:border-primary'
@@ -166,7 +166,7 @@ export const AdmissionModal: React.FC = () => {
                         value={formData.mobileNumber}
                         onChange={handleChange}
                         placeholder="e.g. 9876543210"
-                        className={`w-full px-4 py-2.5 rounded-lg border text-sm focus:outline-none focus:ring-2 transition-all ${
+                        className={`w-full px-4 py-2 rounded-lg border text-sm focus:outline-none focus:ring-2 transition-all ${
                           errors.mobileNumber
                             ? 'border-red-400 focus:ring-red-100 focus:border-red-400'
                             : 'border-slate-200 focus:ring-primary/20 focus:border-primary'
@@ -176,7 +176,7 @@ export const AdmissionModal: React.FC = () => {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
                     {/* Email Address */}
                     <div>
                       <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">
@@ -188,7 +188,7 @@ export const AdmissionModal: React.FC = () => {
                         value={formData.email}
                         onChange={handleChange}
                         placeholder="john.doe@example.com"
-                        className={`w-full px-4 py-2.5 rounded-lg border text-sm focus:outline-none focus:ring-2 transition-all ${
+                        className={`w-full px-4 py-2 rounded-lg border text-sm focus:outline-none focus:ring-2 transition-all ${
                           errors.email
                             ? 'border-red-400 focus:ring-red-100 focus:border-red-400'
                             : 'border-slate-200 focus:ring-primary/20 focus:border-primary'
@@ -206,7 +206,7 @@ export const AdmissionModal: React.FC = () => {
                         name="program"
                         value={formData.program}
                         onChange={handleChange}
-                        className="w-full px-4 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary bg-white"
+                        className="w-full px-4 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary bg-white"
                       >
                         <option value="llb-3yrs">LL.B (3 Years Program)</option>
                         <option value="llb-5yrs">B.A. LL.B (5 Years Integrated)</option>
@@ -214,7 +214,7 @@ export const AdmissionModal: React.FC = () => {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
                     {/* Highest Qualification */}
                     <div>
                       <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">
@@ -224,7 +224,7 @@ export const AdmissionModal: React.FC = () => {
                         name="highestQualification"
                         value={formData.highestQualification}
                         onChange={handleChange}
-                        className="w-full px-4 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary bg-white"
+                        className="w-full px-4 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary bg-white"
                       >
                         <option value="Intermediate">Class 12th / Intermediate</option>
                         <option value="Graduate">Graduation (BA, BSc, BCom, etc.)</option>
@@ -242,7 +242,7 @@ export const AdmissionModal: React.FC = () => {
                         name="preferredCounselling"
                         value={formData.preferredCounselling}
                         onChange={handleChange}
-                        className="w-full px-4 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary bg-white"
+                        className="w-full px-4 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary bg-white"
                       >
                         <option value="Phone">Phone Call Consultation</option>
                         <option value="WhatsApp">WhatsApp Chat Coordination</option>
@@ -260,33 +260,33 @@ export const AdmissionModal: React.FC = () => {
                       name="query"
                       value={formData.query}
                       onChange={handleChange}
-                      rows={3}
+                      rows={2}
                       placeholder="Enter any questions regarding fees, hostels, syllabus, etc."
-                      className="w-full px-4 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                      className="w-full px-4 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
                     />
                   </div>
 
                   {/* Submission and Advisory Note */}
-                  <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 flex items-start gap-3 mt-2">
+                  <div className="bg-slate-50 p-3 rounded-xl border border-slate-100 flex items-start gap-3 mt-1.5">
                     <Calendar className="w-5 h-5 text-gold shrink-0 mt-0.5" />
                     <p className="text-xs text-slate-500 leading-relaxed">
-                      <strong>Important Note:</strong> Online submission is a preliminary registration. Final admission will be completed strictly upon document verification and counseling session at our Aliganj campus.
+                      <strong>Important Note:</strong> Online submission is a preliminary registration. Final admission will be completed strictly upon document verification and counseling session at our Chandrawal campus.
                     </p>
                   </div>
 
                   {/* Actions */}
-                  <div className="flex gap-4 pt-3">
+                  <div className="flex gap-3 pt-2.5">
                     <button
                       type="button"
                       onClick={handleReset}
-                      className="w-1/3 py-3 border border-slate-200 rounded-xl text-slate-600 hover:bg-slate-50 font-medium text-sm transition-all"
+                      className="w-1/3 py-2.5 border border-slate-200 rounded-xl text-slate-600 hover:bg-slate-50 font-medium text-sm transition-all"
                     >
                       Cancel
                     </button>
                     <button
                       type="submit"
                       disabled={isLoading}
-                      className="w-2/3 py-3 bg-primary hover:bg-primary-light text-white font-medium rounded-xl text-sm transition-all shadow-md shadow-primary/20 hover:shadow-lg hover:shadow-primary/30 flex justify-center items-center gap-2 cursor-pointer"
+                      className="w-2/3 py-2.5 bg-primary hover:bg-primary-light text-white font-medium rounded-xl text-sm transition-all shadow-md shadow-primary/20 hover:shadow-lg hover:shadow-primary/30 flex justify-center items-center gap-2 cursor-pointer"
                     >
                       <span>{isLoading ? 'Submitting...' : 'Submit Admission Enquiry'}</span>
                     </button>
@@ -325,7 +325,7 @@ export const AdmissionModal: React.FC = () => {
                       <strong>Helpline Callback:</strong> You will receive an official advisory call on <strong>{formData.mobileNumber}</strong> or email on <strong>{formData.email}</strong> within 24 working hours.
                     </li>
                     <li>
-                      <strong>Campus Physical Visit:</strong> Secure your seat by visiting our campus at Sector C, Aliganj, Lucknow, with original Class 10th, 12th, graduation marksheets, and 4 passport size photos.
+                      <strong>Campus Physical Visit:</strong> Secure your seat by visiting our campus at Sector C, Chandrawal, Lucknow, with original Class 10th, 12th, graduation marksheets, and 4 passport size photos.
                     </li>
                   </ul>
                 </div>

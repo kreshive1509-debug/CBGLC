@@ -100,10 +100,10 @@ export const getAllEnquiries = async (req: Request, res: Response) => {
     try {
         const enquiries = await storage.getEnquiries();
         res.status(200).json(enquiries);
-    } catch (error) {
-        console.error('Error fetching enquiries:', error);
-        res.status(500).json({ message: 'Error fetching enquiries' });
-    }
+  } catch (error) {
+    console.error('Error fetching enquiries:', error);
+    res.status(500).json({ message: 'Error fetching enquiries' });
+  }
 };
 
 export const updateEnquiryStatus = async (req: Request, res: Response) => {
@@ -112,8 +112,8 @@ export const updateEnquiryStatus = async (req: Request, res: Response) => {
         const { status } = req.body;
         const updatedEnquiry = await storage.updateEnquiryStatus(id, status);
         res.status(200).json(updatedEnquiry);
-    } catch (error) {
-        console.error('Error updating enquiry:', error);
-        res.status(500).json({ message: 'Error updating enquiry' });
-    }
+  } catch (error) {
+    console.error('Error updating enquiry:', error);
+    res.status(500).json({ message: 'Error updating enquiry' });
+  }
 };

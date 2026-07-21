@@ -17,7 +17,7 @@ export const FAQ: React.FC = () => {
     },
     {
       q: "How can I apply for admission to the LL.B or Integrated B.A. LL.B programs?",
-      a: "The application process is simple. First, submit an online Admission Enquiry on this website. Our dedicated advisory team will contact you to explain eligibility and seat availability. Afterward, you must bring your academic transcripts, caste certificates (if applicable), and passport-size photographs to our Aliganj campus for counseling, document verification, and admission confirmation.",
+      a: "The application process is simple. First, submit an online Admission Enquiry on this website. Our dedicated advisory team will contact you to explain eligibility and seat availability. Afterward, you must bring your academic transcripts, caste certificates (if applicable), and passport-size photographs to our Chandrawal campus for counseling, document verification, and admission confirmation.",
       category: "Admission"
     },
     {
