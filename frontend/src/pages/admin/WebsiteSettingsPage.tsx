@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
 import { signalCmsUpdated } from '../../utils/cmsSync';
 import { apiUrl } from '../../utils/api';
+import { apiFetch, safeJson } from '../../utils/http';
 
 export function WebsiteSettingsPage() {
   const { settings, refreshData } = useData();
@@ -50,20 +51,21 @@ export function WebsiteSettingsPage() {
         return;
       }
 
-      const response = await fetch(apiUrl('/api/settings'), {
+      const response = await apiFetch(apiUrl('/api/settings'), {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${authToken}`
         },
         body: JSON.stringify(formData)
-      });
+      }, 'WebsiteSettingsPage');
       if (response.ok) {
         alert('Settings updated successfully!');
         refreshData();
         signalCmsUpdated();
       } else {
-        alert('Error updating settings');
+        const errorData = await safeJson<any>(response, 'WebsiteSettingsPage handleSubmit').catch(() => ({}));
+        alert(errorData.error || 'Error updating settings');
       }
     } catch (err) {
       console.error(err);

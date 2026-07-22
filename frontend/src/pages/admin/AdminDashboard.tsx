@@ -33,6 +33,7 @@ import { LeadershipManagement } from './LeadershipManagement';
 import { motion, AnimatePresence } from 'framer-motion';
 import { apiUrl } from '../../utils/api';
 import { formatAdminTimestamp, formatIndianNumber } from '../../utils/formatters';
+import { apiFetch, safeJson } from '../../utils/http';
 
 export function AdminDashboard() {
   const { user, token, logout, isSimulated } = useAdminAuth();
@@ -154,10 +155,10 @@ export function AdminDashboard() {
     const loadVisitorStats = async () => {
       setVisitorStatsLoading(true);
       try {
-        const res = await fetch(apiUrl('/api/visitor-stats'), { cache: 'no-store' });
+        const res = await apiFetch(apiUrl('/api/visitor-stats'), { cache: 'no-store' }, 'AdminDashboard');
         if (!res.ok) return;
 
-        const data = await res.json();
+        const data = await safeJson<any>(res, 'AdminDashboard visitor stats');
         if (isMounted) {
           setVisitorStats({
             totalVisitors: typeof data.totalVisitors === 'number' ? data.totalVisitors : 10000,
@@ -209,16 +210,16 @@ export function AdminDashboard() {
     e.preventDefault();
     setActionLoading(true);
     try {
-      const res = await fetch(apiUrl('/api/founder'), {
+      const res = await apiFetch(apiUrl('/api/founder'), {
         method: 'PUT',
         headers: getAuthHeaders(),
         body: JSON.stringify(founderForm)
-      });
+      }, 'AdminDashboard');
       if (res.ok) {
         showNotification('Founder message updated successfully!');
         refreshData();
       } else {
-        const err = await res.json();
+        const err = await safeJson<any>(res, 'AdminDashboard saveFounder');
         showNotification(err.error || 'Failed to update founder details', true);
       }
     } catch (err: any) {
@@ -232,16 +233,16 @@ export function AdminDashboard() {
     e.preventDefault();
     setActionLoading(true);
     try {
-      const res = await fetch(apiUrl('/api/manager'), {
+      const res = await apiFetch(apiUrl('/api/manager'), {
         method: 'PUT',
         headers: getAuthHeaders(),
         body: JSON.stringify(managerForm)
-      });
+      }, 'AdminDashboard');
       if (res.ok) {
         showNotification('Manager message updated successfully!');
         refreshData();
       } else {
-        const err = await res.json();
+        const err = await safeJson<any>(res, 'AdminDashboard saveManager');
         showNotification(err.error || 'Failed to update manager details', true);
       }
     } catch (err: any) {
@@ -262,16 +263,16 @@ export function AdminDashboard() {
         ...contactForm
       };
 
-      const res = await fetch(apiUrl('/api/settings'), {
+      const res = await apiFetch(apiUrl('/api/settings'), {
         method: 'PUT',
         headers: getAuthHeaders(),
         body: JSON.stringify(mergedPayload)
-      });
+      }, 'AdminDashboard');
       if (res.ok) {
         showNotification('College Settings & Contact details saved successfully!');
         refreshData();
       } else {
-        const err = await res.json();
+        const err = await safeJson<any>(res, 'AdminDashboard saveSettings');
         showNotification(err.error || 'Failed to save settings', true);
       }
     } catch (err: any) {
@@ -292,12 +293,12 @@ export function AdminDashboard() {
     
     try {
       console.log(`Attempting to delete notice with ID: ${id}`);
-      const res = await fetch(apiUrl(`/api/notices/${id}`), {
+      const res = await apiFetch(apiUrl(`/api/notices/${id}`), {
         method: 'DELETE',
         headers: getAuthHeaders()
-      });
+      }, 'AdminDashboard');
       
-      const data = await res.json();
+      const data = await safeJson<any>(res, 'AdminDashboard deleteNotice');
 
       if (res.ok) {
         showNotification('Notice deleted successfully.');
@@ -317,11 +318,11 @@ export function AdminDashboard() {
 
   const toggleNoticePublish = async (id: string, currentPublished: boolean) => {
     try {
-      const res = await fetch(apiUrl(`/api/notices/${id}/publish`), {
+      const res = await apiFetch(apiUrl(`/api/notices/${id}/publish`), {
         method: 'PATCH',
         headers: getAuthHeaders(),
         body: JSON.stringify({ published: !currentPublished })
-      });
+      }, 'AdminDashboard');
       if (res.ok) {
         showNotification(`Notice ${!currentPublished ? 'Published' : 'Unpublished'} successfully.`);
         refreshData();
@@ -333,11 +334,11 @@ export function AdminDashboard() {
 
   const toggleNoticePin = async (id: string, currentPinned: boolean) => {
     try {
-      const res = await fetch(apiUrl(`/api/notices/${id}/pin`), {
+      const res = await apiFetch(apiUrl(`/api/notices/${id}/pin`), {
         method: 'PATCH',
         headers: getAuthHeaders(),
         body: JSON.stringify({ pinned: !currentPinned })
-      });
+      }, 'AdminDashboard');
       if (res.ok) {
         showNotification(`Notice ${!currentPinned ? 'pinned to top' : 'unpinned'} successfully.`);
         refreshData();
@@ -386,20 +387,20 @@ export function AdminDashboard() {
     setActionLoading(true);
     try {
       const method = editingNotice ? 'PUT' : 'POST';
-      const endpoint = editingNotice ? `/api/notices/${editingNotice._id}` : '/api/notices';
+      const endpoint = editingNotice ? apiUrl(`/api/notices/${editingNotice._id}`) : apiUrl('/api/notices');
 
-      const res = await fetch(apiUrl(endpoint), {
+      const res = await apiFetch(endpoint, {
         method,
         headers: getAuthHeaders(),
         body: JSON.stringify(noticeForm)
-      });
+      }, 'AdminDashboard');
 
       if (res.ok) {
         showNotification(editingNotice ? 'Notice updated successfully!' : 'New notice created successfully!');
         setIsNoticeModalOpen(false);
         refreshData();
       } else {
-        const err = await res.json();
+        const err = await safeJson<any>(res, 'AdminDashboard handleNoticeFormSubmit');
         showNotification(err.error || 'Failed to save notice', true);
       }
     } catch (err: any) {

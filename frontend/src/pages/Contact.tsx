@@ -6,6 +6,7 @@ import { useData } from '../context/DataContext';
 import { SEOHelper } from '../components/SEOHelper';
 import { COLLEGE_INFO } from '../constants/data';
 import { apiUrl } from '../utils/api';
+import { apiFetch, safeJson } from '../utils/http';
 
 export const Contact: React.FC = () => {
   const { settings } = useData();
@@ -40,16 +41,16 @@ export const Contact: React.FC = () => {
     setIsSubmitting(true);
 
     try {
-      const response = await fetch(apiUrl('/api/contact'), {
+      const response = await apiFetch(apiUrl('/api/contact'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify(formData)
-      });
+      }, 'Contact');
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
+        const errorData = await safeJson<any>(response, 'Contact submit error').catch(() => ({}));
         throw new Error(errorData.message || 'Unable to send message');
       }
 

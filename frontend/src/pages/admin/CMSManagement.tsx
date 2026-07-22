@@ -28,6 +28,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { signalCmsUpdated } from '../../utils/cmsSync';
 import { COURSES } from '../../constants/data';
 import { apiUrl } from '../../utils/api';
+import { apiFetch, safeJson } from '../../utils/http';
 
 export function CMSManagement() {
   const { settings, refreshData } = useData();
@@ -211,21 +212,21 @@ export function CMSManagement() {
         courses: serializeCoursesForSave(formData.courses || [])
       };
 
-      const response = await fetch(apiUrl('/api/settings'), {
+      const response = await apiFetch(apiUrl('/api/settings'), {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${authToken}`
         },
         body: JSON.stringify(payload)
-      });
+      }, 'CMSManagement');
 
       if (response.ok) {
         showNotification('CMS updated successfully!');
         refreshData();
         signalCmsUpdated();
       } else {
-        const errorData = await response.json().catch(() => ({}));
+        const errorData = await safeJson<any>(response, 'CMSManagement handleSave').catch(() => ({}));
         showNotification(`Failed to update CMS: ${errorData.error || response.statusText}`, true);
       }
     } catch (err: any) {

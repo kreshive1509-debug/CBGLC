@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useAdminAuth } from '../../context/AdminAuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { apiUrl } from '../../utils/api';
+import { apiFetch, safeJson } from '../../utils/http';
 import {
   Plus,
   Search,
@@ -80,9 +81,9 @@ export function LeadershipManagement({ notify }: { notify: (msg: string, isError
   const fetchLeaders = async () => {
     setIsLoading(true);
     try {
-      const res = await fetch(apiUrl('/api/leaders'), { cache: 'no-store' });
+      const res = await apiFetch(apiUrl('/api/leaders'), { cache: 'no-store' }, 'LeadershipManagement');
       if (res.ok) {
-        const data = await res.json();
+        const data = await safeJson<any[]>(res, 'LeadershipManagement fetchLeaders');
         setLeaders(data);
       } else {
         notify('Failed to load leaders.', true);
@@ -158,15 +159,15 @@ export function LeadershipManagement({ notify }: { notify: (msg: string, isError
       const endpoint = editingLeader ? apiUrl(`/api/leaders/${editingLeader._id}`) : apiUrl('/api/leaders');
       const method = editingLeader ? 'PUT' : 'POST';
       const payload = buildLegacyLeaderPayload(formData, editingLeader);
-      const res = await fetch(endpoint, {
+      const res = await apiFetch(endpoint, {
         method,
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`
         },
         body: JSON.stringify(payload)
-      });
-      const data = await res.json();
+      }, 'LeadershipManagement');
+      const data = await safeJson<any>(res, 'LeadershipManagement saveLeader');
       if (!res.ok) {
         notify(data.error || 'Unable to save leader.', true);
         return;
@@ -189,11 +190,11 @@ export function LeadershipManagement({ notify }: { notify: (msg: string, isError
     if (!confirmDeleteId) return;
     setActionLoading(true);
     try {
-      const res = await fetch(apiUrl(`/api/leaders/${confirmDeleteId}`), {
+      const res = await apiFetch(apiUrl(`/api/leaders/${confirmDeleteId}`), {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` }
-      });
-      const data = await res.json();
+      }, 'LeadershipManagement');
+      const data = await safeJson<any>(res, 'LeadershipManagement deleteLeader');
       if (!res.ok) {
         notify(data.error || 'Unable to delete leader.', true);
         return;
@@ -211,15 +212,15 @@ export function LeadershipManagement({ notify }: { notify: (msg: string, isError
   const toggleVisibility = async (leader: any) => {
     setActionLoading(true);
     try {
-      const res = await fetch(apiUrl(`/api/leaders/${leader._id}/publish`), {
+      const res = await apiFetch(apiUrl(`/api/leaders/${leader._id}/publish`), {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`
         },
         body: JSON.stringify({ published: !leader.published })
-      });
-      const data = await res.json();
+      }, 'LeadershipManagement');
+      const data = await safeJson<any>(res, 'LeadershipManagement toggleVisibility');
       if (!res.ok) {
         notify(data.error || 'Unable to update publication status.', true);
         return;
@@ -237,15 +238,15 @@ export function LeadershipManagement({ notify }: { notify: (msg: string, isError
     const newOrder = (leader.displayOrder ?? 0) + delta;
     setActionLoading(true);
     try {
-      const res = await fetch(apiUrl(`/api/leaders/${leader._id}`), {
+      const res = await apiFetch(apiUrl(`/api/leaders/${leader._id}`), {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`
         },
         body: JSON.stringify({ ...leader, displayOrder: newOrder })
-      });
-      const data = await res.json();
+      }, 'LeadershipManagement');
+      const data = await safeJson<any>(res, 'LeadershipManagement updateOrder');
       if (!res.ok) {
         notify(data.error || 'Unable to reorder leader.', true);
         return;

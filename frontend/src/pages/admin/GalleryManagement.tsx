@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useAdminAuth } from '../../context/AdminAuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { apiUrl } from '../../utils/api';
+import { apiFetch, safeJson } from '../../utils/http';
 import {
   Plus,
   Search,
@@ -57,9 +58,9 @@ export function GalleryManagement({ notify }: GalleryManagementProps) {
   const fetchImages = async () => {
     setIsLoading(true);
     try {
-      const res = await fetch(apiUrl('/api/gallery'));
+      const res = await apiFetch(apiUrl('/api/gallery'), {}, 'GalleryManagement');
       if (res.ok) {
-        const data = await res.json();
+        const data = await safeJson<any[]>(res, 'GalleryManagement fetchImages');
         setImages(data);
       } else {
         notify('Failed to load gallery images.', true);
@@ -132,16 +133,16 @@ export function GalleryManagement({ notify }: GalleryManagementProps) {
 
       const endpoint = editingImage ? apiUrl(`/api/gallery/${editingImage._id}`) : apiUrl('/api/gallery');
       const method = editingImage ? 'PUT' : 'POST';
-      const res = await fetch(endpoint, {
+      const res = await apiFetch(endpoint, {
         method,
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${authToken}`
         },
         body: JSON.stringify(formData)
-      });
+      }, 'GalleryManagement');
 
-      const data = await res.json();
+      const data = await safeJson<any>(res, 'GalleryManagement saveImage');
       if (!res.ok) {
         notify(data.error || 'Unable to save image.', true);
         return;
@@ -171,11 +172,11 @@ export function GalleryManagement({ notify }: GalleryManagementProps) {
         return;
       }
 
-      const res = await fetch(apiUrl(`/api/gallery/${confirmDeleteId}`), {
+      const res = await apiFetch(apiUrl(`/api/gallery/${confirmDeleteId}`), {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${authToken}` }
-      });
-      const data = await res.json();
+      }, 'GalleryManagement');
+      const data = await safeJson<any>(res, 'GalleryManagement deleteImage');
       if (!res.ok) {
         notify(data.error || 'Unable to delete image.', true);
         return;
@@ -199,15 +200,15 @@ export function GalleryManagement({ notify }: GalleryManagementProps) {
         return;
       }
 
-      const res = await fetch(apiUrl(`/api/gallery/${item._id}/visible`), {
+      const res = await apiFetch(apiUrl(`/api/gallery/${item._id}/visible`), {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${authToken}`
         },
         body: JSON.stringify({ visible: !item.visible })
-      });
-      const data = await res.json();
+      }, 'GalleryManagement');
+      const data = await safeJson<any>(res, 'GalleryManagement toggleVisibility');
       if (!res.ok) {
         notify(data.error || 'Unable to update visibility.', true);
         return;
@@ -231,7 +232,7 @@ export function GalleryManagement({ notify }: GalleryManagementProps) {
         return;
       }
 
-      const res = await fetch(apiUrl(`/api/gallery/${item._id}`), {
+      const res = await apiFetch(apiUrl(`/api/gallery/${item._id}`), {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -241,8 +242,8 @@ export function GalleryManagement({ notify }: GalleryManagementProps) {
           ...item,
           displayOrder: newOrder
         })
-      });
-      const data = await res.json();
+      }, 'GalleryManagement');
+      const data = await safeJson<any>(res, 'GalleryManagement updateOrder');
       if (!res.ok) {
         notify(data.error || 'Unable to reorder image.', true);
         return;

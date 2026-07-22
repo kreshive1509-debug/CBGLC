@@ -30,6 +30,7 @@ import { BreakingNewsTicker } from '../components/BreakingNewsTicker';
 import { SectionHeading } from '../components/SectionHeading';
 import { Counter } from '../components/Counter';
 import { apiUrl } from '../utils/api';
+import { apiFetch, safeJson } from '../utils/http';
 import { formatIndianNumber } from '../utils/formatters';
 import { getOrCreateVisitorToken, hasVisitorBeenCounted, markVisitorCounted } from '../utils/visitor';
 import {
@@ -81,18 +82,18 @@ export const Home: React.FC = () => {
 
     const loadVisitorStats = async () => {
       const [countResponse, registrationResponse] = await Promise.allSettled([
-        fetch(apiUrl('/api/visitor-count'), { cache: 'no-store' }),
+        apiFetch(apiUrl('/api/visitor-count'), { cache: 'no-store' }, 'Home'),
         (async () => {
           const token = getOrCreateVisitorToken();
           if (!token || hasVisitorBeenCounted(token)) {
             return null;
           }
 
-          const response = await fetch(apiUrl('/api/visitor'), {
+          const response = await apiFetch(apiUrl('/api/visitor'), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ visitorToken: token }),
-          });
+          }, 'Home');
 
           if (response.ok) {
             markVisitorCounted(token);
@@ -105,14 +106,14 @@ export const Home: React.FC = () => {
       const fetchedCounts: number[] = [];
 
       if (countResponse.status === 'fulfilled' && countResponse.value.ok) {
-        const payload = await countResponse.value.json();
+        const payload = await safeJson<any>(countResponse.value, 'Home visitor-count');
         if (typeof payload.totalVisitors === 'number') {
           fetchedCounts.push(payload.totalVisitors);
         }
       }
 
       if (registrationResponse.status === 'fulfilled' && registrationResponse.value?.ok) {
-        const payload = await registrationResponse.value.json();
+        const payload = await safeJson<any>(registrationResponse.value, 'Home visitor registration');
         if (typeof payload.totalVisitors === 'number') {
           fetchedCounts.push(payload.totalVisitors);
         }

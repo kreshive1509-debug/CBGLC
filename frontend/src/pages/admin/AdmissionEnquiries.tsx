@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAdminAuth } from '../../context/AdminAuthContext';
 import { useNavigate } from 'react-router-dom';
 import { apiUrl } from '../../utils/api';
+import { apiFetch, safeJson } from '../../utils/http';
 import {
   Scale,
   Search,
@@ -27,10 +28,10 @@ export function AdmissionEnquiries() {
 
   const fetchEnquiries = async () => {
     try {
-      const res = await fetch(apiUrl('/api/enquiries'), {
+      const res = await apiFetch(apiUrl('/api/enquiries'), {
         headers: { 'Authorization': `Bearer ${token}` }
-      });
-      const data = await res.json();
+      }, 'AdmissionEnquiries');
+      const data = await safeJson<any[]>(res, 'AdmissionEnquiries fetch');
       setEnquiries(data);
     } catch (err) {
       console.error(err);
@@ -41,14 +42,14 @@ export function AdmissionEnquiries() {
 
   const updateStatus = async (id: string, status: string) => {
     try {
-      await fetch(apiUrl(`/api/enquiries/${id}`), {
+      await apiFetch(apiUrl(`/api/enquiries/${id}`), {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({ status })
-      });
+      }, 'AdmissionEnquiries');
       fetchEnquiries();
     } catch (err) {
       console.error(err);

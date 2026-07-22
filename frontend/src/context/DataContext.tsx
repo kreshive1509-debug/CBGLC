@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { COLLEGE_INFO, FOUNDER_INFO, MANAGER_INFO, NOTICES, Notice } from '../constants/data';
 import { CMS_UPDATE_KEY } from '../utils/cmsSync';
 import { apiUrl } from '../utils/api';
+import { apiFetch, safeJson } from '../utils/http';
 
 export interface WebsiteSettings {
   collegeName: string;
@@ -295,51 +296,51 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const refreshData = async () => {
     try {
       // Fetch settings
-      const settingsRes = await fetch(apiUrl('/api/settings'));
+      const settingsRes = await apiFetch(apiUrl('/api/settings'), {}, 'DataContext');
       if (settingsRes.ok) {
-        const data = await settingsRes.json();
+        const data = await safeJson(settingsRes, 'DataContext settings');
         setSettings({ ...fallbackSettings, ...normalizeSettingsData(data) });
       }
 
       // Fetch founder
-      const founderRes = await fetch(apiUrl('/api/founder'));
+      const founderRes = await apiFetch(apiUrl('/api/founder'), {}, 'DataContext');
       if (founderRes.ok) {
-        const data = await founderRes.json();
+        const data = await safeJson(founderRes, 'DataContext founder');
         setFounder({ ...fallbackFounder, ...data });
       }
 
       // Fetch manager
-      const managerRes = await fetch(apiUrl('/api/manager'));
+      const managerRes = await apiFetch(apiUrl('/api/manager'), {}, 'DataContext');
       if (managerRes.ok) {
-        const data = await managerRes.json();
+        const data = await safeJson(managerRes, 'DataContext manager');
         setManager({ ...fallbackManager, ...data });
       }
 
       // Fetch notices
-      const noticesRes = await fetch(apiUrl('/api/notices'));
+      const noticesRes = await apiFetch(apiUrl('/api/notices'), {}, 'DataContext');
       if (noticesRes.ok) {
-        const data = await noticesRes.json();
+        const data = await safeJson(noticesRes, 'DataContext notices');
         setNotices(data);
       }
 
       // Fetch leaders
-      const leadersRes = await fetch(apiUrl('/api/leaders'), { cache: 'no-store' });
+      const leadersRes = await apiFetch(apiUrl('/api/leaders'), { cache: 'no-store' }, 'DataContext');
       if (leadersRes.ok) {
-        const data = await leadersRes.json();
+        const data = await safeJson(leadersRes, 'DataContext leaders');
         setLeaders(data);
       }
 
       // Fetch gallery images
-      const galleryRes = await fetch(apiUrl('/api/gallery'));
+      const galleryRes = await apiFetch(apiUrl('/api/gallery'), {}, 'DataContext');
       if (galleryRes.ok) {
-        const data = await galleryRes.json();
+        const data = await safeJson(galleryRes, 'DataContext gallery');
         setGalleryImages(data);
       }
       
       // Fetch admission settings
-      const admissionRes = await fetch(apiUrl('/api/admission-settings'));
+      const admissionRes = await apiFetch(apiUrl('/api/admission-settings'), {}, 'DataContext');
       if (admissionRes.ok) {
-        const data = await admissionRes.json();
+        const data = await safeJson(admissionRes, 'DataContext admission settings');
         setAdmissionSettings(data);
       }
     } catch (error) {

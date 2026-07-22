@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAdminAuth } from '../../context/AdminAuthContext';
 import { useData } from '../../context/DataContext';
 import { apiUrl } from '../../utils/api';
+import { apiFetch, safeJson } from '../../utils/http';
 import { Save, Database, AlertCircle, CheckCircle2 } from 'lucide-react';
 
 export function AdmissionManagement() {
@@ -18,8 +19,8 @@ export function AdmissionManagement() {
 
   const fetchDbStatus = async () => {
     try {
-      const res = await fetch(apiUrl('/api/db-status'));
-      const data = await res.json();
+      const res = await apiFetch(apiUrl('/api/db-status'), {}, 'AdmissionManagement');
+      const data = await safeJson<any>(res, 'AdmissionManagement db-status');
       setDbStatus(data);
     } catch (err) {
       console.error('Failed to fetch DB status:', err);
@@ -28,10 +29,10 @@ export function AdmissionManagement() {
 
   const fetchSettings = async () => {
     try {
-      const res = await fetch(apiUrl('/api/admission-settings'), {
+      const res = await apiFetch(apiUrl('/api/admission-settings'), {
         headers: { 'Authorization': `Bearer ${token}` }
-      });
-      const data = await res.json();
+      }, 'AdmissionManagement');
+      const data = await safeJson<any>(res, 'AdmissionManagement fetch settings');
       setSettings(data);
     } catch (err) {
       console.error(err);
@@ -44,16 +45,16 @@ export function AdmissionManagement() {
     e.preventDefault();
     setLoading(true);
     try {
-      const res = await fetch(apiUrl('/api/admission-settings'), {
+      const res = await apiFetch(apiUrl('/api/admission-settings'), {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify(settings)
-      });
+      }, 'AdmissionManagement');
       
-      const data = await res.json();
+      const data = await safeJson<any>(res, 'AdmissionManagement save settings');
       
       if (res.ok) {
         setSettings(data);
