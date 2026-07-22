@@ -5,6 +5,11 @@ import { triggerVercelDeployment } from '../utils/vercelDeployment';
 
 export const getNotices = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
+    if (!storage.isMongoConnected()) {
+      res.status(503).json({ error: 'Service Unavailable', message: 'MongoDB is not connected.' });
+      return;
+    }
+
     const { category, search, status } = req.query;
 
     const notices = await storage.getNotices({
@@ -22,6 +27,11 @@ export const getNotices = async (req: AuthenticatedRequest, res: Response): Prom
 
 export const getNoticeById = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
+    if (!storage.isMongoConnected()) {
+      res.status(503).json({ error: 'Service Unavailable', message: 'MongoDB is not connected.' });
+      return;
+    }
+
     const { id } = req.params;
     const notice = await storage.getNoticeById(id);
 
@@ -39,6 +49,11 @@ export const getNoticeById = async (req: AuthenticatedRequest, res: Response): P
 
 export const createNotice = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
+    if (!storage.isMongoConnected()) {
+      res.status(503).json({ error: 'Service Unavailable', message: 'MongoDB is not connected.' });
+      return;
+    }
+
     const { title, description, category, publishDate, expiryDate, googleDriveUrl, pinned, published } = req.body;
 
     if (!title || !description || !category) {
@@ -77,6 +92,11 @@ export const createNotice = async (req: AuthenticatedRequest, res: Response): Pr
 
 export const updateNotice = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
+    if (!storage.isMongoConnected()) {
+      res.status(503).json({ error: 'Service Unavailable', message: 'MongoDB is not connected.' });
+      return;
+    }
+
     const { id } = req.params;
     const { title, description, category, publishDate, expiryDate, googleDriveUrl, pinned, published } = req.body;
 
@@ -122,6 +142,11 @@ export const updateNotice = async (req: AuthenticatedRequest, res: Response): Pr
 
 export const deleteNotice = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
+    if (!storage.isMongoConnected()) {
+      res.status(503).json({ error: 'Service Unavailable', message: 'MongoDB is not connected.' });
+      return;
+    }
+
     const { id } = req.params;
     console.log(`[NoticeController] Delete request for ID: ${id}`);
     
@@ -165,6 +190,11 @@ export const deleteNotice = async (req: AuthenticatedRequest, res: Response): Pr
 
 export const togglePublishNotice = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
+    if (!storage.isMongoConnected()) {
+      res.status(503).json({ error: 'Service Unavailable', message: 'MongoDB is not connected.' });
+      return;
+    }
+
     const { id } = req.params;
     const { published } = req.body;
 
@@ -200,6 +230,11 @@ export const togglePublishNotice = async (req: AuthenticatedRequest, res: Respon
 
 export const togglePinNotice = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
+    if (!storage.isMongoConnected()) {
+      res.status(503).json({ error: 'Service Unavailable', message: 'MongoDB is not connected.' });
+      return;
+    }
+
     const { id } = req.params;
     const { pinned } = req.body;
 

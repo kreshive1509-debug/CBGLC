@@ -4,6 +4,11 @@ import { triggerVercelDeployment } from '../utils/vercelDeployment';
 
 export const getAdmissionSettings = async (req: Request, res: Response) => {
   try {
+    if (!storage.isMongoConnected()) {
+      res.status(503).json({ error: 'Service Unavailable', message: 'MongoDB is not connected.' });
+      return;
+    }
+
     const settings = await storage.getAdmissionSettings();
     res.status(200).json(settings);
   } catch (error: any) {
@@ -14,6 +19,11 @@ export const getAdmissionSettings = async (req: Request, res: Response) => {
 
 export const updateAdmissionSettings = async (req: Request, res: Response) => {
   try {
+    if (!storage.isMongoConnected()) {
+      res.status(503).json({ error: 'Service Unavailable', message: 'MongoDB is not connected.' });
+      return;
+    }
+
     const settings = await storage.updateAdmissionSettings(req.body);
     const deploymentTriggered = storage.isMongoConnected()
       ? await triggerVercelDeployment('Admission Settings')

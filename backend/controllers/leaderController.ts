@@ -5,6 +5,11 @@ import { triggerVercelDeployment } from '../utils/vercelDeployment';
 
 export const getLeaders = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
+    if (!storage.isMongoConnected()) {
+      res.status(503).json({ error: 'Service Unavailable', message: 'MongoDB is not connected.' });
+      return;
+    }
+
     const leaders = await storage.getLeaders();
     res.status(200).json(leaders);
   } catch (error: any) {
@@ -15,6 +20,11 @@ export const getLeaders = async (req: AuthenticatedRequest, res: Response): Prom
 
 export const getLeaderById = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
+    if (!storage.isMongoConnected()) {
+      res.status(503).json({ error: 'Service Unavailable', message: 'MongoDB is not connected.' });
+      return;
+    }
+
     const { id } = req.params;
     const leader = await storage.getLeaderById(id);
     if (!leader) {
@@ -30,6 +40,11 @@ export const getLeaderById = async (req: AuthenticatedRequest, res: Response): P
 
 export const createLeader = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
+    if (!storage.isMongoConnected()) {
+      res.status(503).json({ error: 'Service Unavailable', message: 'MongoDB is not connected.' });
+      return;
+    }
+
     const { fullName, designation, membership, editorialMessage, published, displayOrder } = req.body;
 
     if (!fullName || !designation || !membership) {
@@ -66,6 +81,11 @@ export const createLeader = async (req: AuthenticatedRequest, res: Response): Pr
 
 export const updateLeader = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
+    if (!storage.isMongoConnected()) {
+      res.status(503).json({ error: 'Service Unavailable', message: 'MongoDB is not connected.' });
+      return;
+    }
+
     const { id } = req.params;
     const { fullName, designation, membership, editorialMessage, published, displayOrder } = req.body;
 
@@ -109,6 +129,11 @@ export const updateLeader = async (req: AuthenticatedRequest, res: Response): Pr
 
 export const deleteLeader = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
+    if (!storage.isMongoConnected()) {
+      res.status(503).json({ error: 'Service Unavailable', message: 'MongoDB is not connected.' });
+      return;
+    }
+
     const { id } = req.params;
     const existingLeader = await storage.getLeaderById(id);
     if (!existingLeader) {
@@ -141,6 +166,11 @@ export const deleteLeader = async (req: AuthenticatedRequest, res: Response): Pr
 
 export const toggleLeaderPublish = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
+    if (!storage.isMongoConnected()) {
+      res.status(503).json({ error: 'Service Unavailable', message: 'MongoDB is not connected.' });
+      return;
+    }
+
     const { id } = req.params;
     const { published } = req.body;
     const leader = await storage.getLeaderById(id);
@@ -173,6 +203,11 @@ export const toggleLeaderPublish = async (req: AuthenticatedRequest, res: Respon
 
 export const toggleLeaderFeatured = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
+    if (!storage.isMongoConnected()) {
+      res.status(503).json({ error: 'Service Unavailable', message: 'MongoDB is not connected.' });
+      return;
+    }
+
     const { id } = req.params;
     const { featured } = req.body;
     const leader = await storage.getLeaderById(id);

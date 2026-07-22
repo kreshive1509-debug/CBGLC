@@ -4,6 +4,10 @@ import nodemailer from 'nodemailer';
 
 export const createEnquiry = async (req: Request, res: Response) => {
   try {
+    if (!storage.isMongoConnected()) {
+      return res.status(503).json({ message: 'Service Unavailable: MongoDB is not connected.' });
+    }
+
     const { fullName, mobileNumber, email, program, highestQualification, preferredCounselling, query } = req.body;
 
     // Validate fields
@@ -33,7 +37,7 @@ export const createEnquiry = async (req: Request, res: Response) => {
 
     // 1. Google Sheet Integration
     try {
-        const { appendToGoogleSheet } = await import('../utils/googleSheets.js');
+        const { appendToGoogleSheet } = await import('../utils/googleSheets');
         await appendToGoogleSheet([
             date,
             time,
@@ -98,6 +102,10 @@ export const createEnquiry = async (req: Request, res: Response) => {
 
 export const getAllEnquiries = async (req: Request, res: Response) => {
     try {
+        if (!storage.isMongoConnected()) {
+            return res.status(503).json({ message: 'Service Unavailable: MongoDB is not connected.' });
+        }
+
         const enquiries = await storage.getEnquiries();
         res.status(200).json(enquiries);
   } catch (error) {
@@ -108,6 +116,10 @@ export const getAllEnquiries = async (req: Request, res: Response) => {
 
 export const updateEnquiryStatus = async (req: Request, res: Response) => {
     try {
+        if (!storage.isMongoConnected()) {
+            return res.status(503).json({ message: 'Service Unavailable: MongoDB is not connected.' });
+        }
+
         const { id } = req.params;
         const { status } = req.body;
         const updatedEnquiry = await storage.updateEnquiryStatus(id, status);

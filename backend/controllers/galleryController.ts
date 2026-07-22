@@ -5,6 +5,11 @@ import { triggerVercelDeployment } from '../utils/vercelDeployment';
 
 export const getGalleryImages = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
+    if (!storage.isMongoConnected()) {
+      res.status(503).json({ error: 'Service Unavailable', message: 'MongoDB is not connected.' });
+      return;
+    }
+
     const { category, search, visible } = req.query;
     const images = await storage.getGalleryImages({
       category: category as string,
@@ -21,6 +26,11 @@ export const getGalleryImages = async (req: AuthenticatedRequest, res: Response)
 
 export const getGalleryImageById = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
+    if (!storage.isMongoConnected()) {
+      res.status(503).json({ error: 'Service Unavailable', message: 'MongoDB is not connected.' });
+      return;
+    }
+
     const { id } = req.params;
     const image = await storage.getGalleryImageById(id);
     if (!image) {
@@ -36,6 +46,11 @@ export const getGalleryImageById = async (req: AuthenticatedRequest, res: Respon
 
 export const createGalleryImage = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
+    if (!storage.isMongoConnected()) {
+      res.status(503).json({ error: 'Service Unavailable', message: 'MongoDB is not connected.' });
+      return;
+    }
+
     const { url, title, category, visible, displayOrder } = req.body;
 
     if (!url || !title || !category) {
@@ -77,6 +92,11 @@ export const createGalleryImage = async (req: AuthenticatedRequest, res: Respons
 
 export const updateGalleryImage = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
+    if (!storage.isMongoConnected()) {
+      res.status(503).json({ error: 'Service Unavailable', message: 'MongoDB is not connected.' });
+      return;
+    }
+
     const { id } = req.params;
     const { url, title, category, visible, displayOrder } = req.body;
 
@@ -125,6 +145,11 @@ export const updateGalleryImage = async (req: AuthenticatedRequest, res: Respons
 
 export const deleteGalleryImage = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
+    if (!storage.isMongoConnected()) {
+      res.status(503).json({ error: 'Service Unavailable', message: 'MongoDB is not connected.' });
+      return;
+    }
+
     const { id } = req.params;
     const existingImage = await storage.getGalleryImageById(id);
     if (!existingImage) {
@@ -157,6 +182,11 @@ export const deleteGalleryImage = async (req: AuthenticatedRequest, res: Respons
 
 export const toggleGalleryImageVisibility = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
+    if (!storage.isMongoConnected()) {
+      res.status(503).json({ error: 'Service Unavailable', message: 'MongoDB is not connected.' });
+      return;
+    }
+
     const { id } = req.params;
     const { visible } = req.body;
     const existingImage = await storage.getGalleryImageById(id);

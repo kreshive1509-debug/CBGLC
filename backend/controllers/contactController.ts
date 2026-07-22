@@ -6,6 +6,10 @@ const normalizeString = (value: unknown) => (typeof value === 'string' ? value.t
 
 export const createContactMessage = async (req: Request, res: Response) => {
   try {
+    if (!storage.isMongoConnected()) {
+      return res.status(503).json({ message: 'Service Unavailable: MongoDB is not connected.' });
+    }
+
     const name = normalizeString(req.body?.name);
     const email = normalizeString(req.body?.email).toLowerCase();
     const phone = normalizeString(req.body?.phone);

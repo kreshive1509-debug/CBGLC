@@ -1,6 +1,6 @@
 import { google } from 'googleapis';
 import { GoogleAuth } from 'google-auth-library';
-import Settings from '../models/Settings.js';
+import Settings from '../models/Settings';
 
 export const appendToGoogleSheet = async (data: any[]) => {
   try {

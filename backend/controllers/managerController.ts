@@ -5,6 +5,11 @@ import { triggerVercelDeployment } from '../utils/vercelDeployment';
 
 export const getManager = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
+    if (!storage.isMongoConnected()) {
+      res.status(503).json({ error: 'Service Unavailable', message: 'MongoDB is not connected.' });
+      return;
+    }
+
     const manager = await storage.getManager();
     res.status(200).json(manager);
   } catch (error: any) {
@@ -15,6 +20,11 @@ export const getManager = async (req: AuthenticatedRequest, res: Response): Prom
 
 export const updateManager = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
+    if (!storage.isMongoConnected()) {
+      res.status(503).json({ error: 'Service Unavailable', message: 'MongoDB is not connected.' });
+      return;
+    }
+
     const { name, designation, message, googleDrivePhotoUrl } = req.body;
 
     if (!name || !designation || !message) {
