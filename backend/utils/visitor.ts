@@ -63,8 +63,8 @@ export const readVisitorToken = (req: Request) => {
   const bodyToken = typeof req.body?.visitorToken === 'string' ? req.body.visitorToken : '';
   const headerToken = typeof req.headers['x-visitor-id'] === 'string' ? req.headers['x-visitor-id'] : '';
   const cookieToken = cookieHeader.get(VISITOR_COOKIE_NAME) || '';
-  const fallbackToken = `${req.ip || 'unknown'}|${req.get('user-agent') || 'unknown-agent'}`;
-  const sourceToken = bodyToken || headerToken || cookieToken || fallbackToken;
+  const derivedToken = `${req.ip || 'unknown'}|${req.get('user-agent') || 'unknown-agent'}`;
+  const sourceToken = bodyToken || headerToken || cookieToken || derivedToken;
 
   return sourceToken.trim().slice(0, 256);
 };

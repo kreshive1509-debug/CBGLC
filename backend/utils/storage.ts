@@ -87,61 +87,6 @@ const toPlain = (value: any) => {
   return typeof value.toObject === 'function' ? value.toObject() : value;
 };
 
-const createFallbackNotice = (noticeData: any) => ({
-  _id: `n_${Date.now()}`,
-  title: noticeData.title,
-  description: noticeData.description,
-  category: noticeData.category,
-  publishDate: noticeData.publishDate || new Date().toISOString(),
-  expiryDate: noticeData.expiryDate || null,
-  googleDriveUrl: noticeData.googleDriveUrl || '',
-  pinned: noticeData.pinned ?? false,
-  published: noticeData.published ?? true,
-  createdAt: new Date().toISOString(),
-  updatedAt: new Date().toISOString(),
-});
-
-const createFallbackGalleryImage = (imageData: any) => ({
-  _id: `g_${Date.now()}`,
-  url: imageData.url,
-  title: imageData.title,
-  category: imageData.category,
-  visible: imageData.visible ?? true,
-  displayOrder: imageData.displayOrder ?? 0,
-  createdAt: new Date().toISOString(),
-  updatedAt: new Date().toISOString(),
-});
-
-const createFallbackLeader = (leaderData: any) => normalizeLeaderRecord({
-  _id: `l_${Date.now()}`,
-  photoUrl: leaderData.photoUrl || '',
-  fullName: leaderData.fullName,
-  designation: leaderData.designation,
-  membership: leaderData.membership || 'Member',
-  editorialMessage: leaderData.editorialMessage,
-  buttonText: leaderData.buttonText || '',
-  buttonUrl: leaderData.buttonUrl || '',
-  published: leaderData.published ?? true,
-  featured: leaderData.featured ?? false,
-  displayOrder: leaderData.displayOrder ?? 0,
-  createdAt: new Date().toISOString(),
-  updatedAt: new Date().toISOString(),
-});
-
-const createFallbackEnquiry = (enquiryData: any) => ({
-  _id: `e_${Date.now()}`,
-  ...enquiryData,
-  status: enquiryData.status || 'New',
-  timestamp: enquiryData.timestamp || new Date(),
-});
-
-const createFallbackContactMessage = (messageData: any) => ({
-  _id: `c_${Date.now()}`,
-  ...messageData,
-  status: messageData.status || 'New',
-  timestamp: messageData.timestamp || new Date(),
-});
-
 export const storage = {
   // --- SETTINGS ---
   async getSettings() {
@@ -152,7 +97,7 @@ export const storage = {
 
   async updateSettings(updateData: any) {
     const normalizedUpdate = normalizeSettingsPayload(updateData);
-    if (!isMongoConnected()) return normalizedUpdate;
+    if (!isMongoConnected()) return null;
 
     let settings = await Settings.findOne();
     if (!settings) {
@@ -172,7 +117,7 @@ export const storage = {
   },
 
   async updateFounder(updateData: any) {
-    if (!isMongoConnected()) return updateData;
+    if (!isMongoConnected()) return null;
 
     let founder = await Founder.findOne();
     if (!founder) {
@@ -192,7 +137,7 @@ export const storage = {
   },
 
   async updateManager(updateData: any) {
-    if (!isMongoConnected()) return updateData;
+    if (!isMongoConnected()) return null;
 
     let manager = await Manager.findOne();
     if (!manager) {
@@ -233,7 +178,7 @@ export const storage = {
   },
 
   async createNotice(noticeData: any) {
-    if (!isMongoConnected()) return createFallbackNotice(noticeData);
+    if (!isMongoConnected()) return null;
 
     const notice = new Notice({
       ...noticeData,
@@ -288,7 +233,7 @@ export const storage = {
   },
 
   async createGalleryImage(imageData: any) {
-    if (!isMongoConnected()) return createFallbackGalleryImage(imageData);
+    if (!isMongoConnected()) return null;
 
     const image = new GalleryImage(imageData);
     await image.save();
@@ -373,7 +318,7 @@ export const storage = {
   },
 
   async createLeader(leaderData: any) {
-    if (!isMongoConnected()) return createFallbackLeader(leaderData);
+    if (!isMongoConnected()) return null;
 
     const leader = new Leader(leaderData);
     await leader.save();
@@ -402,7 +347,7 @@ export const storage = {
   },
 
   async updateAdmissionSettings(updateData: any) {
-    if (!isMongoConnected()) return updateData;
+    if (!isMongoConnected()) return null;
 
     let settings = await AdmissionSettings.findOne();
     if (!settings) {
@@ -421,7 +366,7 @@ export const storage = {
   },
 
   async createEnquiry(enquiryData: any) {
-    if (!isMongoConnected()) return createFallbackEnquiry(enquiryData);
+    if (!isMongoConnected()) return null;
 
     const enquiry = new AdmissionEnquiry(enquiryData);
     await enquiry.save();
@@ -438,7 +383,7 @@ export const storage = {
 
   // --- CONTACT MESSAGES ---
   async createContactMessage(messageData: any) {
-    if (!isMongoConnected()) return createFallbackContactMessage(messageData);
+    if (!isMongoConnected()) return null;
 
     const message = new ContactMessage(messageData);
     await message.save();
