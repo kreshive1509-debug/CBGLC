@@ -20,10 +20,42 @@ for (const envFile of envFiles) {
   }
 }
 
+const secretEnvPatterns = [/secret/i, /token/i, /key/i, /pass/i, /pwd/i, /private/i, /uri/i, /cert/i];
+const getSafeEnvSummary = () => {
+  const summary: Record<string, string> = {};
+
+  for (const [key, value] of Object.entries(process.env)) {
+    if (!value) {
+      summary[key] = '(empty)';
+      continue;
+    }
+
+    if (secretEnvPatterns.some((pattern) => pattern.test(key))) {
+      summary[key] = '[redacted]';
+      continue;
+    }
+
+    summary[key] = value;
+  }
+
+  return summary;
+};
+
+const logRequestDetails = (req: express.Request, _res: express.Response, next: express.NextFunction) => {
+  console.log(`[request] Origin=${req.headers.origin || 'none'} Method=${req.method} Path=${req.originalUrl}`);
+  next();
+};
+
 async function startServer() {
   const app = express();
   const PORT = Number(process.env.PORT || 3000);
-  const isProduction = process.env.NODE_ENV === "production";
+  const isProduction = process.env.NODE_ENV === 'production';
+
+  console.log('[startup] Loaded FRONTEND_URL:', process.env.FRONTEND_URL || '(not set)');
+  console.log('[startup] Loaded APP_URL:', process.env.APP_URL || '(not set)');
+  console.log('[startup] Loaded CORS_ORIGIN:', process.env.CORS_ORIGIN || '(not set)');
+  console.log('[startup] Loaded safe environment variables:', JSON.stringify(getSafeEnvSummary(), null, 2));
+
   const defaultOrigins = [
     'https://cbglc.vercel.app',
     'https://cbglc-0twr.onrender.com',
@@ -34,9 +66,15 @@ async function startServer() {
       .map((value) => value.trim())
       .filter(Boolean)
   );
+
   const corsOptions: cors.CorsOptions = {
     origin(origin, callback) {
-      if (!isProduction || !origin || allowedOrigins.has(origin)) {
+      if (!origin) {
+        callback(null, true);
+        return;
+      }
+
+      if (!isProduction || allowedOrigins.has(origin)) {
         callback(null, true);
         return;
       }
@@ -54,6 +92,9 @@ async function startServer() {
   await connectDB();
   initFirebase();
 
+  app.use(cors(corsOptions));
+  app.options('*', cors(corsOptions));
+  app.use(logRequestDetails);
   app.use(helmet({
     contentSecurityPolicy: isProduction ? {
       directives: {
@@ -65,12 +106,6 @@ async function startServer() {
       },
     } : false,
   }));
-  app.use((_req, res, next) => {
-    res.header('Access-Control-Allow-Credentials', 'true');
-    next();
-  });
-  app.use(cors(corsOptions));
-  app.options('*', cors(corsOptions));
   app.use(express.json({ limit: '100kb' }));
   app.use(express.urlencoded({ extended: true }));
 
@@ -78,7 +113,14 @@ async function startServer() {
     res.status(200).json({ service: 'cbgl-api', status: 'ok' });
   });
 
-  app.use('/api', rateLimit({ windowMs: 15 * 60 * 1000, max: 500, standardHeaders: true, legacyHeaders: false, message: { error: 'Too many requests, please try again later.' } }));
+  app.use('/api', rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 500,
+    standardHeaders: true,
+    legacyHeaders: false,
+    skip: (req) => req.method === 'OPTIONS',
+    message: { error: 'Too many requests, please try again later.' },
+  }));
   app.use('/api', apiRoutes);
   app.use('/api', (req, res) => {
     res.status(404).json({
@@ -87,11 +129,11 @@ async function startServer() {
     });
   });
 
-  app.use((_err: unknown, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
-    console.error('Unhandled server error');
+  app.use((err: unknown, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
+    console.error('[server] Unhandled error:', err);
     res.status(500).json({ error: 'Internal Server Error' });
   });
-  app.listen(PORT, "0.0.0.0", () => console.log(`Server listening on port ${PORT}`));
+  app.listen(PORT, '0.0.0.0', () => console.log(`Server listening on port ${PORT}`));
 }
 
 startServer().catch(() => { console.error('Failed to start server'); process.exit(1); });

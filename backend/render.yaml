@@ -10,3 +10,9 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
+      - key: FRONTEND_URL
+        value: https://cbglc.vercel.app
+      - key: APP_URL
+        value: https://cbglc.vercel.app
+      - key: CORS_ORIGIN
+        value: https://cbglc.vercel.app
