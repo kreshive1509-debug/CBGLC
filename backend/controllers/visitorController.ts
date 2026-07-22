@@ -1,11 +1,10 @@
-import type { Request, Response } from 'express';
 import mongoose from 'mongoose';
+import type { Request, Response } from 'express';
 import { isMongoConnected } from '../config/db';
 import VisitorCounter from '../models/VisitorCounter';
 import VisitorMetric from '../models/VisitorMetric';
 import VisitorSession from '../models/VisitorSession';
 import { getVisitorBucketKeys, hashVisitorToken, readVisitorToken } from '../utils/visitor';
-import { getLocalVisitorCount, getLocalVisitorStats, registerLocalVisitor } from '../utils/visitorStorage';
 
 const COUNTER_KEY = 'global';
 
@@ -23,7 +22,7 @@ const ensureVisitorCounter = async (session?: mongoose.ClientSession) => {
       upsert: true,
       session,
     }
-  );
+  ).lean();
 };
 
 const incrementMetric = async (metricType: 'day' | 'week' | 'month', bucketKey: string, session?: mongoose.ClientSession) => {
@@ -41,7 +40,7 @@ const incrementMetric = async (metricType: 'day' | 'week' | 'month', bucketKey: 
       upsert: true,
       session,
     }
-  );
+  ).lean();
 };
 
 const getMetricCount = async (metricType: 'day' | 'week' | 'month', bucketKey: string) => {
@@ -52,8 +51,7 @@ const getMetricCount = async (metricType: 'day' | 'week' | 'month', bucketKey: s
 export const getVisitorCount = async (_req: Request, res: Response) => {
   try {
     if (!isMongoConnected()) {
-      const totalVisitors = await getLocalVisitorCount();
-      return res.status(200).json({ totalVisitors });
+      return res.status(503).json({ error: 'Service Unavailable', message: 'MongoDB is not connected.' });
     }
 
     const counter = await ensureVisitorCounter();
@@ -67,8 +65,7 @@ export const getVisitorCount = async (_req: Request, res: Response) => {
 export const getVisitorStats = async (_req: Request, res: Response) => {
   try {
     if (!isMongoConnected()) {
-      const localStats = await getLocalVisitorStats();
-      return res.status(200).json(localStats);
+      return res.status(503).json({ error: 'Service Unavailable', message: 'MongoDB is not connected.' });
     }
 
     const counter = await ensureVisitorCounter();
@@ -101,8 +98,7 @@ export const registerVisitor = async (req: Request, res: Response) => {
 
   try {
     if (!isMongoConnected()) {
-      const localResult = await registerLocalVisitor(req);
-      return res.status(200).json(localResult);
+      return res.status(503).json({ error: 'Service Unavailable', message: 'MongoDB is not connected.' });
     }
 
     const visitorHash = hashVisitorToken(token);
@@ -133,7 +129,7 @@ export const registerVisitor = async (req: Request, res: Response) => {
             { key: COUNTER_KEY },
             { $inc: { totalVisitors: 1 } },
             { returnDocument: 'after', session }
-          );
+          ).lean();
 
           const { dayKey, weekKey, monthKey } = getVisitorBucketKeys();
           await Promise.all([

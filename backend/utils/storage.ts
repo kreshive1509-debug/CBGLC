@@ -1,5 +1,3 @@
-import fs from 'fs';
-import path from 'path';
 import mongoose from 'mongoose';
 import { isMongoConnected } from '../config/db';
 import _Notice from '../models/Notice';
@@ -15,8 +13,6 @@ import ContactMessage from '../models/ContactMessage';
 const Notice = _Notice as any;
 const GalleryImageModel: any = GalleryImage;
 const LeaderModel: any = Leader;
-
-const LOCAL_DB_PATH = path.join(process.cwd(), 'data', 'db.json');
 
 const toStringArray = (value: any): string[] => {
   if (!Array.isArray(value)) return [];
@@ -50,7 +46,7 @@ const normalizeCourseEntry = (course: any, index: number) => ({
   careerOpportunities: toStringArray(course?.careerOpportunities),
   coreSubjects: toStringArray(course?.coreSubjects),
   curriculumPdfUrl: course?.curriculumPdfUrl || course?.curriculumPdf || '',
-  applyButtonText: course?.applyButtonText || 'Apply Now'
+  applyButtonText: course?.applyButtonText || 'Apply Now',
 });
 
 const normalizeSettingsPayload = (updateData: any) => ({
@@ -59,51 +55,6 @@ const normalizeSettingsPayload = (updateData: any) => ({
     ? updateData.courses.map((course: any, index: number) => normalizeCourseEntry(course, index))
     : updateData?.courses,
 });
-
-// Helper to read local JSON DB
-const readLocalDB = () => {
-  try {
-    if (!fs.existsSync(LOCAL_DB_PATH)) {
-      return { settings: {}, founder: {}, manager: {}, notices: [], galleryImages: [], leaders: [], admissionSettings: {}, enquiries: [], contactMessages: [] };
-    }
-    const data = fs.readFileSync(LOCAL_DB_PATH, 'utf-8');
-    const parsed = JSON.parse(data);
-    if (!parsed.admissionSettings) {
-        parsed.admissionSettings = {
-            admissionStatus: parsed.settings?.admissionStatus || 'Closed',
-            academicSession: parsed.settings?.academicSession || '2026-27',
-            admissionMessage: parsed.settings?.admissionMessage || 'Admissions Open',
-            breakingNewsStatus: parsed.settings?.breakingNewsStatus || false,
-            breakingNewsText: parsed.settings?.breakingNewsText || 'Admissions Open'
-        };
-    }
-    if (!parsed.galleryImages) {
-        parsed.galleryImages = [];
-    }
-    if (!parsed.leaders) {
-        parsed.leaders = [];
-    }
-    if (!parsed.enquiries) {
-        parsed.enquiries = [];
-    }
-    if (!parsed.contactMessages) {
-        parsed.contactMessages = [];
-    }
-    return parsed;
-  } catch (err) {
-    console.error('Error reading local JSON database:', err);
-    return { settings: {}, founder: {}, manager: {}, notices: [], galleryImages: [], leaders: [], admissionSettings: {}, enquiries: [], contactMessages: [] };
-  }
-};
-
-// Helper to write local JSON DB
-const writeLocalDB = (data: any) => {
-  try {
-    fs.writeFileSync(LOCAL_DB_PATH, JSON.stringify(data, null, 2), 'utf-8');
-  } catch (err) {
-    console.error('Error writing local JSON database:', err);
-  }
-};
 
 const normalizeLeaderRecord = (leader: any) => {
   const fullName = String(leader?.fullName || leader?.name || '').trim();
@@ -127,628 +78,371 @@ const normalizeLeaderRecord = (leader: any) => {
     featured: leader?.featured ?? false,
     displayOrder: typeof leader?.displayOrder === 'number' ? leader.displayOrder : 0,
     createdAt: leader?.createdAt || new Date().toISOString(),
-    updatedAt: leader?.updatedAt || leader?.createdAt || new Date().toISOString()
+    updatedAt: leader?.updatedAt || leader?.createdAt || new Date().toISOString(),
   };
 };
+
+const toPlain = (value: any) => {
+  if (!value) return null;
+  return typeof value.toObject === 'function' ? value.toObject() : value;
+};
+
+const createFallbackNotice = (noticeData: any) => ({
+  _id: `n_${Date.now()}`,
+  title: noticeData.title,
+  description: noticeData.description,
+  category: noticeData.category,
+  publishDate: noticeData.publishDate || new Date().toISOString(),
+  expiryDate: noticeData.expiryDate || null,
+  googleDriveUrl: noticeData.googleDriveUrl || '',
+  pinned: noticeData.pinned ?? false,
+  published: noticeData.published ?? true,
+  createdAt: new Date().toISOString(),
+  updatedAt: new Date().toISOString(),
+});
+
+const createFallbackGalleryImage = (imageData: any) => ({
+  _id: `g_${Date.now()}`,
+  url: imageData.url,
+  title: imageData.title,
+  category: imageData.category,
+  visible: imageData.visible ?? true,
+  displayOrder: imageData.displayOrder ?? 0,
+  createdAt: new Date().toISOString(),
+  updatedAt: new Date().toISOString(),
+});
+
+const createFallbackLeader = (leaderData: any) => normalizeLeaderRecord({
+  _id: `l_${Date.now()}`,
+  photoUrl: leaderData.photoUrl || '',
+  fullName: leaderData.fullName,
+  designation: leaderData.designation,
+  membership: leaderData.membership || 'Member',
+  editorialMessage: leaderData.editorialMessage,
+  buttonText: leaderData.buttonText || '',
+  buttonUrl: leaderData.buttonUrl || '',
+  published: leaderData.published ?? true,
+  featured: leaderData.featured ?? false,
+  displayOrder: leaderData.displayOrder ?? 0,
+  createdAt: new Date().toISOString(),
+  updatedAt: new Date().toISOString(),
+});
+
+const createFallbackEnquiry = (enquiryData: any) => ({
+  _id: `e_${Date.now()}`,
+  ...enquiryData,
+  status: enquiryData.status || 'New',
+  timestamp: enquiryData.timestamp || new Date(),
+});
+
+const createFallbackContactMessage = (messageData: any) => ({
+  _id: `c_${Date.now()}`,
+  ...messageData,
+  status: messageData.status || 'New',
+  timestamp: messageData.timestamp || new Date(),
+});
 
 export const storage = {
   // --- SETTINGS ---
   async getSettings() {
-    if (isMongoConnected()) {
-      let settings = await Settings.findOne();
-      if (!settings) {
-        // Seed database if empty
-        const local = readLocalDB();
-        settings = await Settings.create(local.settings);
-      }
-      return settings;
-    } else {
-      return readLocalDB().settings;
-    }
+    if (!isMongoConnected()) return {};
+    const settings = await Settings.findOne().lean();
+    return settings || {};
   },
 
   async updateSettings(updateData: any) {
     const normalizedUpdate = normalizeSettingsPayload(updateData);
-    if (isMongoConnected()) {
-      let settings = await Settings.findOne();
-      if (!settings) {
-        settings = new Settings(normalizedUpdate);
-      } else {
-        Object.assign(settings, normalizedUpdate);
-      }
-      await settings.save();
-      return settings;
+    if (!isMongoConnected()) return normalizedUpdate;
+
+    let settings = await Settings.findOne();
+    if (!settings) {
+      settings = new Settings(normalizedUpdate);
     } else {
-      const db = readLocalDB();
-      db.settings = { ...db.settings, ...normalizedUpdate };
-      writeLocalDB(db);
-      return db.settings;
+      Object.assign(settings, normalizedUpdate);
     }
+    await settings.save();
+    return toPlain(settings);
   },
 
   // --- FOUNDER ---
   async getFounder() {
-    if (isMongoConnected()) {
-      let founder = await Founder.findOne();
-      if (!founder) {
-        const local = readLocalDB();
-        founder = await Founder.create(local.founder);
-      }
-      return founder;
-    } else {
-      return readLocalDB().founder;
-    }
+    if (!isMongoConnected()) return {};
+    const founder = await Founder.findOne().lean();
+    return founder || {};
   },
 
   async updateFounder(updateData: any) {
-    if (isMongoConnected()) {
-      let founder = await Founder.findOne();
-      if (!founder) {
-        founder = new Founder(updateData);
-      } else {
-        Object.assign(founder, updateData);
-      }
-      await founder.save();
-      return founder;
+    if (!isMongoConnected()) return updateData;
+
+    let founder = await Founder.findOne();
+    if (!founder) {
+      founder = new Founder(updateData);
     } else {
-      const db = readLocalDB();
-      db.founder = { ...db.founder, ...updateData };
-      writeLocalDB(db);
-      return db.founder;
+      Object.assign(founder, updateData);
     }
+    await founder.save();
+    return toPlain(founder);
   },
 
   // --- MANAGER ---
   async getManager() {
-    if (isMongoConnected()) {
-      let manager = await Manager.findOne();
-      if (!manager) {
-        const local = readLocalDB();
-        manager = await Manager.create(local.manager);
-      }
-      return manager;
-    } else {
-      return readLocalDB().manager;
-    }
+    if (!isMongoConnected()) return {};
+    const manager = await Manager.findOne().lean();
+    return manager || {};
   },
 
   async updateManager(updateData: any) {
-    if (isMongoConnected()) {
-      let manager = await Manager.findOne();
-      if (!manager) {
-        manager = new Manager(updateData);
-      } else {
-        Object.assign(manager, updateData);
-      }
-      await manager.save();
-      return manager;
+    if (!isMongoConnected()) return updateData;
+
+    let manager = await Manager.findOne();
+    if (!manager) {
+      manager = new Manager(updateData);
     } else {
-      const db = readLocalDB();
-      db.manager = { ...db.manager, ...updateData };
-      writeLocalDB(db);
-      return db.manager;
+      Object.assign(manager, updateData);
     }
+    await manager.save();
+    return toPlain(manager);
   },
 
   // --- NOTICES ---
   async getNotices(filters: { category?: string; search?: string; status?: string } = {}) {
-    if (isMongoConnected()) {
-      const query: any = {};
-      if (filters.category) {
-        query.category = filters.category;
-      }
-      if (filters.status) {
-        if (filters.status === 'published') query.published = true;
-        if (filters.status === 'draft') query.published = false;
-        if (filters.status === 'pinned') query.pinned = true;
-      }
-      if (filters.search) {
-        query.$or = [
-          { title: { $regex: filters.search, $options: 'i' } },
-          { description: { $regex: filters.search, $options: 'i' } }
-        ];
-      }
-      // Sort by pinned desc, then publishDate desc
-      return await Notice.find(query).sort({ pinned: -1, publishDate: -1 });
-    } else {
-      const db = readLocalDB();
-      let list = db.notices || [];
+    if (!isMongoConnected()) return [];
 
-      // Apply category filter
-      if (filters.category) {
-        list = list.filter((n: any) => n.category.toLowerCase() === filters.category!.toLowerCase());
-      }
-
-      // Apply status filter
-      if (filters.status) {
-        if (filters.status === 'published') list = list.filter((n: any) => n.published === true);
-        if (filters.status === 'draft') list = list.filter((n: any) => n.published === false);
-        if (filters.status === 'pinned') list = list.filter((n: any) => n.pinned === true);
-      }
-
-      // Apply search query
-      if (filters.search) {
-        const term = filters.search.toLowerCase();
-        list = list.filter((n: any) => 
-          n.title.toLowerCase().includes(term) || 
-          n.description.toLowerCase().includes(term)
-        );
-      }
-
-      // Sort by pinned first, then publishDate descending
-      return list.sort((a: any, b: any) => {
-        if (a.pinned !== b.pinned) {
-          return a.pinned ? -1 : 1;
-        }
-        return new Date(b.publishDate).getTime() - new Date(a.publishDate).getTime();
-      });
+    const query: any = {};
+    if (filters.category) {
+      query.category = filters.category;
     }
+    if (filters.status) {
+      if (filters.status === 'published') query.published = true;
+      if (filters.status === 'draft') query.published = false;
+      if (filters.status === 'pinned') query.pinned = true;
+    }
+    if (filters.search) {
+      query.$or = [
+        { title: { $regex: filters.search, $options: 'i' } },
+        { description: { $regex: filters.search, $options: 'i' } },
+      ];
+    }
+
+    return Notice.find(query).sort({ pinned: -1, publishDate: -1 }).lean();
   },
 
   async getNoticeById(id: string) {
-    if (isMongoConnected()) {
-      if (!mongoose.Types.ObjectId.isValid(id)) return null;
-      return await Notice.findById(id);
-    } else {
-      const db = readLocalDB();
-      return db.notices.find((n: any) => n._id === id) || null;
-    }
+    if (!isMongoConnected() || !mongoose.Types.ObjectId.isValid(id)) return null;
+    return Notice.findById(id).lean();
   },
 
   async createNotice(noticeData: any) {
-    if (isMongoConnected()) {
-      const notice = new Notice({
-        ...noticeData,
-        publishDate: noticeData.publishDate ? new Date(noticeData.publishDate) : new Date(),
-        expiryDate: noticeData.expiryDate ? new Date(noticeData.expiryDate) : undefined,
-      });
-      await notice.save();
-      return notice;
-    } else {
-      const db = readLocalDB();
-      const newNotice = {
-        _id: 'n_' + Date.now(),
-        title: noticeData.title,
-        description: noticeData.description,
-        category: noticeData.category,
-        publishDate: noticeData.publishDate || new Date().toISOString(),
-        expiryDate: noticeData.expiryDate || null,
-        googleDriveUrl: noticeData.googleDriveUrl || '',
-        pinned: noticeData.pinned ?? false,
-        published: noticeData.published ?? true,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      };
-      db.notices.push(newNotice);
-      writeLocalDB(db);
-      return newNotice;
-    }
+    if (!isMongoConnected()) return createFallbackNotice(noticeData);
+
+    const notice = new Notice({
+      ...noticeData,
+      publishDate: noticeData.publishDate ? new Date(noticeData.publishDate) : new Date(),
+      expiryDate: noticeData.expiryDate ? new Date(noticeData.expiryDate) : undefined,
+    });
+    await notice.save();
+    return toPlain(notice);
+  },
+
+  async updateNotice(id: string, updateData: any) {
+    if (!isMongoConnected() || !mongoose.Types.ObjectId.isValid(id)) return null;
+    const dataToUpdate = { ...updateData };
+    if (updateData.publishDate) dataToUpdate.publishDate = new Date(updateData.publishDate);
+    if (updateData.expiryDate) dataToUpdate.expiryDate = new Date(updateData.expiryDate);
+
+    return Notice.findByIdAndUpdate(id, dataToUpdate, {
+      new: true,
+      runValidators: true,
+    }).lean();
+  },
+
+  async deleteNotice(id: string) {
+    if (!isMongoConnected() || !mongoose.Types.ObjectId.isValid(id)) return null;
+    return Notice.findByIdAndDelete(id).lean();
   },
 
   // --- GALLERY ---
   async getGalleryImages(filters: { category?: string; search?: string; visible?: boolean } = {}) {
-    if (isMongoConnected()) {
-      const query: any = {};
-      if (filters.category) query.category = filters.category;
-      if (typeof filters.visible === 'boolean') query.visible = filters.visible;
-      if (filters.search) {
-        query.$or = [
-          { title: { $regex: filters.search, $options: 'i' } },
-          { category: { $regex: filters.search, $options: 'i' } }
-        ];
-      }
-      return await GalleryImage.find(query).sort({ displayOrder: 1, createdAt: -1 });
-    } else {
-      const db = readLocalDB();
-      let items = db.galleryImages || [];
-      if (filters.category) {
-        items = items.filter((item: any) => item.category.toLowerCase() === filters.category!.toLowerCase());
-      }
-      if (typeof filters.visible === 'boolean') {
-        items = items.filter((item: any) => item.visible === filters.visible);
-      }
-      if (filters.search) {
-        const term = filters.search.toLowerCase();
-        items = items.filter((item: any) =>
-          item.title.toLowerCase().includes(term) || item.category.toLowerCase().includes(term)
-        );
-      }
-      return items.sort((a: any, b: any) => a.displayOrder - b.displayOrder || new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    if (!isMongoConnected()) return [];
+
+    const query: any = {};
+    if (filters.category) query.category = filters.category;
+    if (typeof filters.visible === 'boolean') query.visible = filters.visible;
+    if (filters.search) {
+      query.$or = [
+        { title: { $regex: filters.search, $options: 'i' } },
+        { category: { $regex: filters.search, $options: 'i' } },
+      ];
     }
+    return GalleryImage.find(query).sort({ displayOrder: 1, createdAt: -1 }).lean();
   },
 
   async getGalleryImageById(id: string) {
-    if (isMongoConnected()) {
-      if (!mongoose.Types.ObjectId.isValid(id)) return null;
-      return await GalleryImageModel.findById(id).exec();
-    } else {
-      const db = readLocalDB();
-      return db.galleryImages.find((img: any) => img._id === id) || null;
-    }
+    if (!isMongoConnected() || !mongoose.Types.ObjectId.isValid(id)) return null;
+    return GalleryImageModel.findById(id).lean();
   },
 
   async findGalleryImageByUrl(url: string) {
-    if (isMongoConnected()) {
-      return await GalleryImageModel.findOne({ url }).exec();
-    } else {
-      const db = readLocalDB();
-      return db.galleryImages.find((img: any) => img.url === url) || null;
-    }
+    if (!isMongoConnected()) return null;
+    return GalleryImageModel.findOne({ url }).lean();
   },
 
   async createGalleryImage(imageData: any) {
-    if (isMongoConnected()) {
-      const image = new GalleryImage(imageData);
-      await image.save();
-      return image;
-    } else {
-      const db = readLocalDB();
-      const newImage = {
-        _id: 'g_' + Date.now(),
-        url: imageData.url,
-        title: imageData.title,
-        category: imageData.category,
-        visible: imageData.visible ?? true,
-        displayOrder: imageData.displayOrder ?? 0,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      };
-      db.galleryImages.push(newImage);
-      writeLocalDB(db);
-      return newImage;
-    }
+    if (!isMongoConnected()) return createFallbackGalleryImage(imageData);
+
+    const image = new GalleryImage(imageData);
+    await image.save();
+    return toPlain(image);
   },
 
   async updateGalleryImage(id: string, updateData: any) {
-    if (isMongoConnected()) {
-      if (!mongoose.Types.ObjectId.isValid(id)) return null;
-      return await GalleryImageModel.findByIdAndUpdate(id, updateData, { new: true }).exec();
-    } else {
-      const db = readLocalDB();
-      const index = db.galleryImages.findIndex((img: any) => img._id === id);
-      if (index === -1) return null;
-      const updated = {
-        ...db.galleryImages[index],
-        ...updateData,
-        updatedAt: new Date().toISOString()
-      };
-      db.galleryImages[index] = updated;
-      writeLocalDB(db);
-      return updated;
-    }
+    if (!isMongoConnected() || !mongoose.Types.ObjectId.isValid(id)) return null;
+    return GalleryImageModel.findByIdAndUpdate(id, updateData, {
+      new: true,
+      runValidators: true,
+    }).lean();
   },
 
   async deleteGalleryImage(id: string) {
-    if (isMongoConnected()) {
-      if (!mongoose.Types.ObjectId.isValid(id)) return null;
-      return await GalleryImageModel.findByIdAndDelete(id).exec();
-    } else {
-      const db = readLocalDB();
-      const index = db.galleryImages.findIndex((img: any) => img._id === id);
-      if (index === -1) return false;
-      db.galleryImages.splice(index, 1);
-      writeLocalDB(db);
-      return true;
-    }
+    if (!isMongoConnected() || !mongoose.Types.ObjectId.isValid(id)) return null;
+    return GalleryImageModel.findByIdAndDelete(id).lean();
   },
 
   // --- LEADERS ---
   async getLeaders() {
-    if (isMongoConnected()) {
-      let leaders = await Leader.find().sort({ createdAt: 1, _id: 1 });
-      if (leaders.length === 0) {
-        const founder = await this.getFounder();
-        const manager = await this.getManager();
-        const seedLeaders: any[] = [];
-        if (founder) {
-          seedLeaders.push({
-            photoUrl: founder.googleDrivePhotoUrl || '',
-            fullName: founder.name || 'Founder',
-            designation: founder.designation || 'Founder',
-            membership: 'Founder',
-            editorialMessage: founder.message || '',
-            buttonText: 'Read Full Message',
-            buttonUrl: '/founder',
-            published: true,
-            featured: true,
-            displayOrder: 0
-          });
-        }
-        if (manager) {
-          seedLeaders.push({
-            photoUrl: manager.googleDrivePhotoUrl || '',
-            fullName: manager.name || 'Manager',
-            designation: manager.designation || 'Manager',
-            membership: 'Manager',
-            editorialMessage: manager.message || '',
-            buttonText: 'Read Full Message',
-            buttonUrl: '/manager',
-            published: true,
-            featured: false,
-            displayOrder: 1
-          });
-        }
-        if (seedLeaders.length > 0) {
-          leaders = await Leader.insertMany(seedLeaders);
-          return leaders
-            .map((leader: any) => normalizeLeaderRecord(leader.toObject ? leader.toObject() : leader))
-            .sort((a: any, b: any) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
-        }
+    if (!isMongoConnected()) return [];
+
+    let leaders = await Leader.find().sort({ createdAt: 1, _id: 1 }).lean();
+    if (leaders.length === 0) {
+      const founder = await this.getFounder();
+      const manager = await this.getManager();
+      const seedLeaders: any[] = [];
+
+      if (founder && Object.keys(founder).length > 0) {
+        seedLeaders.push({
+          photoUrl: founder.googleDrivePhotoUrl || '',
+          fullName: founder.name || 'Founder',
+          designation: founder.designation || 'Founder',
+          membership: 'Founder',
+          editorialMessage: founder.message || '',
+          buttonText: 'Read Full Message',
+          buttonUrl: '/founder',
+          published: true,
+          featured: true,
+          displayOrder: 0,
+        });
       }
-      return leaders
-        .map((leader: any) => normalizeLeaderRecord(leader.toObject ? leader.toObject() : leader))
-        .sort((a: any, b: any) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
-    } else {
-      const db = readLocalDB();
-      if (!db.leaders || db.leaders.length === 0) {
-        const founder = await this.getFounder();
-        const manager = await this.getManager();
-        const seedLeaders: any[] = [];
-        if (founder) {
-          seedLeaders.push({
-            _id: 'l_' + Date.now() + '_f',
-            photoUrl: founder.googleDrivePhotoUrl || '',
-            fullName: founder.name || 'Founder',
-            designation: founder.designation || 'Founder',
-            membership: 'Founder',
-            editorialMessage: founder.message || '',
-            buttonText: 'Read Full Message',
-            buttonUrl: '/founder',
-            published: true,
-            featured: true,
-            displayOrder: 0,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString()
-          });
-        }
-        if (manager) {
-          seedLeaders.push({
-            _id: 'l_' + Date.now() + '_m',
-            photoUrl: manager.googleDrivePhotoUrl || '',
-            fullName: manager.name || 'Manager',
-            designation: manager.designation || 'Manager',
-            membership: 'Manager',
-            editorialMessage: manager.message || '',
-            buttonText: 'Read Full Message',
-            buttonUrl: '/manager',
-            published: true,
-            featured: false,
-            displayOrder: 1,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString()
-          });
-        }
-        if (seedLeaders.length > 0) {
-          db.leaders = seedLeaders;
-          writeLocalDB(db);
-        }
+
+      if (manager && Object.keys(manager).length > 0) {
+        seedLeaders.push({
+          photoUrl: manager.googleDrivePhotoUrl || '',
+          fullName: manager.name || 'Manager',
+          designation: manager.designation || 'Manager',
+          membership: 'Manager',
+          editorialMessage: manager.message || '',
+          buttonText: 'Read Full Message',
+          buttonUrl: '/manager',
+          published: true,
+          featured: false,
+          displayOrder: 1,
+        });
       }
-      return (db.leaders || [])
-        .map((leader: any) => normalizeLeaderRecord(leader))
-        .sort((a: any, b: any) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+
+      if (seedLeaders.length > 0) {
+        leaders = await Leader.insertMany(seedLeaders);
+        return leaders
+          .map((leader: any) => normalizeLeaderRecord(toPlain(leader)))
+          .sort((a: any, b: any) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+      }
     }
+
+    return leaders
+      .map((leader: any) => normalizeLeaderRecord(toPlain(leader)))
+      .sort((a: any, b: any) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
   },
 
   async getLeaderById(id: string) {
-    if (isMongoConnected()) {
-      if (!mongoose.Types.ObjectId.isValid(id)) return null;
-      const leader = await LeaderModel.findById(id).exec();
-      return leader ? normalizeLeaderRecord(leader.toObject ? leader.toObject() : leader) : null;
-    } else {
-      const db = readLocalDB();
-      const leader = db.leaders.find((entry: any) => entry._id === id) || null;
-      return leader ? normalizeLeaderRecord(leader) : null;
-    }
+    if (!isMongoConnected() || !mongoose.Types.ObjectId.isValid(id)) return null;
+    const leader = await LeaderModel.findById(id).lean();
+    return leader ? normalizeLeaderRecord(leader) : null;
   },
 
   async findLeaderByPhotoUrl(photoUrl: string) {
-    if (isMongoConnected()) {
-      return await LeaderModel.findOne({ photoUrl }).exec();
-    } else {
-      const db = readLocalDB();
-      return db.leaders.find((leader: any) => leader.photoUrl === photoUrl) || null;
-    }
+    if (!isMongoConnected()) return null;
+    return LeaderModel.findOne({ photoUrl }).lean();
   },
 
   async createLeader(leaderData: any) {
-    if (isMongoConnected()) {
-      const leader = new Leader(leaderData);
-      await leader.save();
-      return normalizeLeaderRecord(leader.toObject ? leader.toObject() : leader);
-    } else {
-      const db = readLocalDB();
-      const newLeader = {
-        _id: 'l_' + Date.now(),
-        photoUrl: leaderData.photoUrl || '',
-        fullName: leaderData.fullName,
-        designation: leaderData.designation,
-        membership: leaderData.membership || 'Member',
-        editorialMessage: leaderData.editorialMessage,
-        buttonText: leaderData.buttonText || '',
-        buttonUrl: leaderData.buttonUrl || '',
-        published: leaderData.published ?? true,
-        featured: leaderData.featured ?? false,
-        displayOrder: leaderData.displayOrder ?? 0,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      };
-      db.leaders.push(newLeader);
-      writeLocalDB(db);
-      return normalizeLeaderRecord(newLeader);
-    }
+    if (!isMongoConnected()) return createFallbackLeader(leaderData);
+
+    const leader = new Leader(leaderData);
+    await leader.save();
+    return normalizeLeaderRecord(toPlain(leader));
   },
 
   async updateLeader(id: string, updateData: any) {
-    if (isMongoConnected()) {
-      if (!mongoose.Types.ObjectId.isValid(id)) return null;
-      const updated = await LeaderModel.findByIdAndUpdate(id, updateData, { new: true }).exec();
-      return updated ? normalizeLeaderRecord(updated.toObject ? updated.toObject() : updated) : null;
-    } else {
-      const db = readLocalDB();
-      const index = db.leaders.findIndex((leader: any) => leader._id === id);
-      if (index === -1) return null;
-      const updated = {
-        ...db.leaders[index],
-        ...updateData,
-        updatedAt: new Date().toISOString()
-      };
-      db.leaders[index] = updated;
-      writeLocalDB(db);
-      return normalizeLeaderRecord(updated);
-    }
+    if (!isMongoConnected() || !mongoose.Types.ObjectId.isValid(id)) return null;
+    const updated = await LeaderModel.findByIdAndUpdate(id, updateData, {
+      new: true,
+      runValidators: true,
+    }).lean();
+    return updated ? normalizeLeaderRecord(updated) : null;
   },
 
   async deleteLeader(id: string) {
-    if (isMongoConnected()) {
-      if (!mongoose.Types.ObjectId.isValid(id)) return null;
-      return await LeaderModel.findByIdAndDelete(id).exec();
-    } else {
-      const db = readLocalDB();
-      const index = db.leaders.findIndex((leader: any) => leader._id === id);
-      if (index === -1) return false;
-      db.leaders.splice(index, 1);
-      writeLocalDB(db);
-      return true;
-    }
-  },
-
-
-  async updateNotice(id: string, updateData: any) {
-    if (isMongoConnected()) {
-      if (!mongoose.Types.ObjectId.isValid(id)) return null;
-      const dataToUpdate = { ...updateData };
-      if (updateData.publishDate) dataToUpdate.publishDate = new Date(updateData.publishDate);
-      if (updateData.expiryDate) dataToUpdate.expiryDate = new Date(updateData.expiryDate);
-      
-      return await Notice.findByIdAndUpdate(id, dataToUpdate, { new: true });
-    } else {
-      const db = readLocalDB();
-      const index = db.notices.findIndex((n: any) => n._id === id);
-      if (index === -1) return null;
-
-      const updated = {
-        ...db.notices[index],
-        ...updateData,
-        updatedAt: new Date().toISOString()
-      };
-      db.notices[index] = updated;
-      writeLocalDB(db);
-      return updated;
-    }
-  },
-
-  async deleteNotice(id: string) {
-    if (isMongoConnected()) {
-      if (!mongoose.Types.ObjectId.isValid(id)) return null;
-      return await Notice.findByIdAndDelete(id);
-    } else {
-      const db = readLocalDB();
-      const index = db.notices.findIndex((n: any) => n._id === id);
-      if (index === -1) return false;
-
-      db.notices.splice(index, 1);
-      writeLocalDB(db);
-      return true;
-    }
+    if (!isMongoConnected() || !mongoose.Types.ObjectId.isValid(id)) return null;
+    return LeaderModel.findByIdAndDelete(id).lean();
   },
 
   // --- ADMISSION SETTINGS ---
   async getAdmissionSettings() {
-    if (isMongoConnected()) {
-      let settings = await AdmissionSettings.findOne();
-      if (!settings) {
-        const local = readLocalDB();
-        settings = await AdmissionSettings.create(local.admissionSettings);
-      }
-      return settings;
-    } else {
-      return readLocalDB().admissionSettings;
-    }
+    if (!isMongoConnected()) return {};
+    const settings = await AdmissionSettings.findOne().lean();
+    return settings || {};
   },
 
   async updateAdmissionSettings(updateData: any) {
-    if (isMongoConnected()) {
-      let settings = await AdmissionSettings.findOne();
-      if (!settings) {
-        settings = new AdmissionSettings(updateData);
-      } else {
-        Object.assign(settings, updateData);
-      }
-      await settings.save();
-      return settings;
+    if (!isMongoConnected()) return updateData;
+
+    let settings = await AdmissionSettings.findOne();
+    if (!settings) {
+      settings = new AdmissionSettings(updateData);
     } else {
-      const db = readLocalDB();
-      db.admissionSettings = { ...db.admissionSettings, ...updateData };
-      writeLocalDB(db);
-      return db.admissionSettings;
+      Object.assign(settings, updateData);
     }
+    await settings.save();
+    return toPlain(settings);
   },
 
   // --- ENQUIRIES ---
   async getEnquiries() {
-    if (isMongoConnected()) {
-      return await AdmissionEnquiry.find().sort({ timestamp: -1 });
-    } else {
-      const db = readLocalDB();
-      return (db.enquiries || []).sort((a: any, b: any) => 
-        new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
-      );
-    }
+    if (!isMongoConnected()) return [];
+    return AdmissionEnquiry.find().sort({ timestamp: -1 }).lean();
   },
 
   async createEnquiry(enquiryData: any) {
-    if (isMongoConnected()) {
-      const enquiry = new AdmissionEnquiry(enquiryData);
-      await enquiry.save();
-      return enquiry;
-    } else {
-      const db = readLocalDB();
-      const newEnquiry = {
-        _id: 'e_' + Date.now(),
-        ...enquiryData,
-        status: enquiryData.status || 'New',
-        timestamp: enquiryData.timestamp || new Date().toISOString()
-      };
-      db.enquiries = db.enquiries || [];
-      db.enquiries.push(newEnquiry);
-      writeLocalDB(db);
-      return newEnquiry;
-    }
+    if (!isMongoConnected()) return createFallbackEnquiry(enquiryData);
+
+    const enquiry = new AdmissionEnquiry(enquiryData);
+    await enquiry.save();
+    return toPlain(enquiry);
   },
 
   async updateEnquiryStatus(id: string, status: string) {
-    if (isMongoConnected()) {
-      return await (AdmissionEnquiry.findByIdAndUpdate as any)(id, { status }, { new: true });
-    } else {
-      const db = readLocalDB();
-      const index = db.enquiries.findIndex((e: any) => e._id === id);
-      if (index === -1) return null;
-
-      db.enquiries[index].status = status;
-      writeLocalDB(db);
-      return db.enquiries[index];
-    }
+    if (!isMongoConnected()) return null;
+    return AdmissionEnquiry.findByIdAndUpdate(id, { status }, {
+      new: true,
+      runValidators: true,
+    }).lean();
   },
 
   // --- CONTACT MESSAGES ---
   async createContactMessage(messageData: any) {
-    if (isMongoConnected()) {
-      const message = new ContactMessage(messageData);
-      await message.save();
-      return message;
-    } else {
-      const db = readLocalDB();
-      const newMessage = {
-        _id: 'c_' + Date.now(),
-        ...messageData,
-        status: messageData.status || 'New',
-        timestamp: messageData.timestamp || new Date().toISOString()
-      };
-      db.contactMessages = db.contactMessages || [];
-      db.contactMessages.push(newMessage);
-      writeLocalDB(db);
-      return newMessage;
-    }
+    if (!isMongoConnected()) return createFallbackContactMessage(messageData);
+
+    const message = new ContactMessage(messageData);
+    await message.save();
+    return toPlain(message);
   },
 
   isMongoConnected() {

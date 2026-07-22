@@ -1,90 +1,72 @@
-import fs from 'fs/promises';
-import path from 'path';
-import { readVisitorToken, hashVisitorToken, getVisitorBucketKeys } from './visitor';
+import mongoose from 'mongoose';
 import type { Request } from 'express';
+import { readVisitorToken, hashVisitorToken, getVisitorBucketKeys } from './visitor';
+import VisitorCounter from '../models/VisitorCounter';
+import VisitorMetric from '../models/VisitorMetric';
+import VisitorSession from '../models/VisitorSession';
 
-type VisitorMetricType = 'day' | 'week' | 'month';
+const COUNTER_KEY = 'global';
 
-interface LocalVisitorSession {
-  source: string;
-  firstSeenAt: string;
-  lastSeenAt: string;
-}
-
-interface LocalVisitorStore {
-  counter: {
-    totalVisitors: number;
-    createdAt: string;
-    updatedAt: string;
-  };
-  metrics: Record<VisitorMetricType, Record<string, number>>;
-  sessions: Record<string, LocalVisitorSession>;
-}
-
-const VISITOR_STORE_PATH = path.join(process.cwd(), 'data', 'visitor-counter.json');
-
-const createDefaultStore = (): LocalVisitorStore => {
-  const now = new Date().toISOString();
-  return {
-    counter: {
-      totalVisitors: 10000,
-      createdAt: now,
-      updatedAt: now,
-    },
-    metrics: {
-      day: {},
-      week: {},
-      month: {},
-    },
-    sessions: {},
-  };
-};
-
-const ensureStoreDirectory = async () => {
-  await fs.mkdir(path.dirname(VISITOR_STORE_PATH), { recursive: true });
-};
-
-const readStore = async (): Promise<LocalVisitorStore> => {
-  try {
-    const raw = await fs.readFile(VISITOR_STORE_PATH, 'utf8');
-    const parsed = JSON.parse(raw) as Partial<LocalVisitorStore>;
-    const defaultStore = createDefaultStore();
-    return {
-      counter: {
-        ...defaultStore.counter,
-        ...(parsed.counter || {}),
+const ensureVisitorCounter = async (session?: mongoose.ClientSession) => {
+  return VisitorCounter.findOneAndUpdate(
+    { key: COUNTER_KEY },
+    {
+      $setOnInsert: {
+        key: COUNTER_KEY,
+        totalVisitors: 10000,
       },
-      metrics: {
-        day: parsed.metrics?.day || {},
-        week: parsed.metrics?.week || {},
-        month: parsed.metrics?.month || {},
-      },
-      sessions: parsed.sessions || {},
-    };
-  } catch {
-    return createDefaultStore();
-  }
+    },
+    {
+      returnDocument: 'after',
+      upsert: true,
+      session,
+    }
+  ).lean();
 };
 
-const writeStore = async (store: LocalVisitorStore) => {
-  await ensureStoreDirectory();
-  await fs.writeFile(VISITOR_STORE_PATH, JSON.stringify(store, null, 2), 'utf8');
+const incrementMetric = async (metricType: 'day' | 'week' | 'month', bucketKey: string, session?: mongoose.ClientSession) => {
+  return VisitorMetric.findOneAndUpdate(
+    { metricType, bucketKey },
+    {
+      $setOnInsert: {
+        metricType,
+        bucketKey,
+      },
+      $inc: { count: 1 },
+    },
+    {
+      returnDocument: 'after',
+      upsert: true,
+      session,
+    }
+  ).lean();
+};
+
+const getMetricCount = async (metricType: 'day' | 'week' | 'month', bucketKey: string) => {
+  const metric = await VisitorMetric.findOne({ metricType, bucketKey }).lean();
+  return metric?.count || 0;
 };
 
 export const getLocalVisitorCount = async () => {
-  const store = await readStore();
-  return store.counter.totalVisitors;
+  const counter = await ensureVisitorCounter();
+  return counter?.totalVisitors || 10000;
 };
 
 export const getLocalVisitorStats = async () => {
-  const store = await readStore();
+  const counter = await ensureVisitorCounter();
   const { dayKey, weekKey, monthKey } = getVisitorBucketKeys();
+  const [todayVisitors, thisWeekVisitors, thisMonthVisitors] = await Promise.all([
+    getMetricCount('day', dayKey),
+    getMetricCount('week', weekKey),
+    getMetricCount('month', monthKey),
+  ]);
+
   return {
-    totalVisitors: store.counter.totalVisitors,
-    todayVisitors: store.metrics.day[dayKey] || 0,
-    thisWeekVisitors: store.metrics.week[weekKey] || 0,
-    thisMonthVisitors: store.metrics.month[monthKey] || 0,
-    lastUpdated: store.counter.updatedAt,
+    totalVisitors: counter?.totalVisitors || 10000,
+    todayVisitors,
+    thisWeekVisitors,
+    thisMonthVisitors,
+    lastUpdated: counter?.updatedAt || counter?.createdAt || null,
   };
 };
 
@@ -92,26 +74,52 @@ export const registerLocalVisitor = async (req: Request) => {
   const token = readVisitorToken(req);
   const visitorHash = hashVisitorToken(token);
   const source = req.body?.visitorToken ? 'body-token' : req.get('x-visitor-id') ? 'header-token' : req.headers.cookie?.includes('cbgl_visitor_id=') ? 'cookie-token' : 'ip-user-agent';
-  const store = await readStore();
+  const session = await mongoose.startSession();
 
-  if (!store.sessions[visitorHash]) {
-    const now = new Date().toISOString();
-    const { dayKey, weekKey, monthKey } = getVisitorBucketKeys();
-    store.sessions[visitorHash] = {
-      source,
-      firstSeenAt: now,
-      lastSeenAt: now,
-    };
-    store.counter.totalVisitors += 1;
-    store.counter.updatedAt = now;
-    store.metrics.day[dayKey] = (store.metrics.day[dayKey] || 0) + 1;
-    store.metrics.week[weekKey] = (store.metrics.week[weekKey] || 0) + 1;
-    store.metrics.month[monthKey] = (store.metrics.month[monthKey] || 0) + 1;
-    await writeStore(store);
-    return { totalVisitors: store.counter.totalVisitors, counted: true };
+  try {
+    let totalVisitors = 10000;
+    let counted = false;
+
+    await session.withTransaction(async () => {
+      const inserted = await VisitorSession.create(
+        [
+          {
+            visitorHash,
+            source,
+            firstSeenAt: new Date(),
+            lastSeenAt: new Date(),
+          },
+        ],
+        { session }
+      );
+
+      if (inserted?.length) {
+        counted = true;
+        const counter = await ensureVisitorCounter(session);
+        const updatedCounter = await VisitorCounter.findOneAndUpdate(
+          { key: COUNTER_KEY },
+          { $inc: { totalVisitors: 1 } },
+          { returnDocument: 'after', session }
+        ).lean();
+
+        const { dayKey, weekKey, monthKey } = getVisitorBucketKeys();
+        await Promise.all([
+          incrementMetric('day', dayKey, session),
+          incrementMetric('week', weekKey, session),
+          incrementMetric('month', monthKey, session),
+        ]);
+
+        totalVisitors = updatedCounter?.totalVisitors || (counter?.totalVisitors ? counter.totalVisitors + 1 : 10001);
+      }
+    });
+
+    if (!counted) {
+      const counter = await ensureVisitorCounter();
+      totalVisitors = counter?.totalVisitors || 10000;
+    }
+
+    return { totalVisitors, counted };
+  } finally {
+    session.endSession();
   }
-
-  store.sessions[visitorHash].lastSeenAt = new Date().toISOString();
-  await writeStore(store);
-  return { totalVisitors: store.counter.totalVisitors, counted: false };
 };

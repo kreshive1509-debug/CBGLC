@@ -617,7 +617,7 @@ export function AdminDashboard() {
                   <div className="space-y-1">
                     <h3 className="text-xs font-bold text-amber-900 uppercase tracking-wider">Development Sandbox Active</h3>
                     <p className="text-xs text-amber-700 leading-relaxed font-medium">
-                      You are operating in simulated bypass auth. Database reads and modifications are stored in local storage and fallback JSON files automatically. Your changes are fully persisted and will display in the live app instantly! Once you configure real MongoDB & Firebase credentials in your environment, the server will switch to high-performance production databases automatically.
+                      You are operating in simulated bypass auth. Once MongoDB and Firebase credentials are configured, the server switches to the production data sources automatically.
                     </p>
                   </div>
                 </div>
