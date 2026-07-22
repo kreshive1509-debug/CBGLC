@@ -40,6 +40,13 @@ import { isMongoConnected } from '../config/db';
 const router = Router();
 
 // --- PUBLIC ROUTES ---
+router.get('/health', (_req, res) => {
+  res.status(200).json({
+    success: true,
+    status: 'OK',
+    timestamp: new Date().toISOString(),
+  });
+});
 router.get('/settings', getSettings);
 router.get('/db-status', (req, res) => {
   const connected = isMongoConnected();
