@@ -5,7 +5,7 @@ import { defineConfig, loadEnv } from 'vite';
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
-  const apiTarget = env.VITE_API_URL?.trim() || 'http://127.0.0.1:3000';
+  const apiTarget = env.VITE_API_BASE_URL?.trim();
 
   return {
     plugins: [react(), tailwindcss()],
@@ -24,21 +24,16 @@ export default defineConfig(({ mode }) => {
       watch: process.env.DISABLE_HMR === 'true' ? null : {},
 
       // Allow your Render domain
-      proxy: {
-        '/api': {
-          target: apiTarget,
-          changeOrigin: true,
-        },
-      },
-      allowedHosts: [
-        'cbgl.onrender.com',
-      ],
+      proxy: apiTarget
+        ? {
+            '/api': {
+              target: apiTarget,
+              changeOrigin: true,
+            },
+          }
+        : undefined,
     },
 
-    preview: {
-      allowedHosts: [
-        'cbgl.onrender.com',
-      ],
-    },
+    preview: {},
   };
 });

@@ -40,7 +40,7 @@ const hasConfig = Boolean(
 );
 
 // Enforce production mode check
-const isProduction = Boolean(metaEnv.PROD || (typeof window !== 'undefined' && window.location.hostname !== 'localhost'));
+const isProduction = Boolean(metaEnv.PROD);
 
 let auth: any = null;
 
