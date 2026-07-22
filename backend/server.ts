@@ -1,11 +1,24 @@
-import 'dotenv/config';
+import fs from 'fs';
+import path from 'path';
+import dotenv from 'dotenv';
 import express from "express";
 import cors from "cors";
 import helmet from "helmet";
 import { rateLimit } from "express-rate-limit";
-import { connectDB } from "./backend/config/db";
-import { initFirebase } from "./backend/config/firebase";
-import apiRoutes from "./backend/routes/apiRoutes";
+import { connectDB } from "./config/db";
+import { initFirebase } from "./config/firebase";
+import apiRoutes from "./routes/apiRoutes";
+
+const envFiles = [
+  path.resolve(process.cwd(), '.env'),
+  path.resolve(process.cwd(), '..', '.env'),
+];
+
+for (const envFile of envFiles) {
+  if (fs.existsSync(envFile)) {
+    dotenv.config({ path: envFile });
+  }
+}
 
 async function startServer() {
   const app = express();

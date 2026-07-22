@@ -5,6 +5,7 @@ import { SectionHeading } from '../components/SectionHeading';
 import { useData } from '../context/DataContext';
 import { SEOHelper } from '../components/SEOHelper';
 import { COLLEGE_INFO } from '../constants/data';
+import { apiUrl } from '../utils/api';
 
 export const Contact: React.FC = () => {
   const { settings } = useData();
@@ -16,6 +17,7 @@ export const Contact: React.FC = () => {
     message: ''
   });
   const [isSent, setIsSent] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const validate = () => {
@@ -31,19 +33,39 @@ export const Contact: React.FC = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validate()) return;
-    
-    // Simulate API call
-    setIsSent(true);
-    setFormData({
-      name: '',
-      email: '',
-      phone: '',
-      subject: 'General Enquiry',
-      message: ''
-    });
+
+    setIsSubmitting(true);
+
+    try {
+      const response = await fetch(apiUrl('/api/contact'), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(formData)
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || 'Unable to send message');
+      }
+
+      setIsSent(true);
+      setFormData({
+        name: '',
+        email: '',
+        phone: '',
+        subject: 'General Enquiry',
+        message: ''
+      });
+    } catch (error) {
+      alert(error instanceof Error ? error.message : 'Unable to send message right now.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -287,10 +309,11 @@ export const Contact: React.FC = () => {
 
                     <button
                       type="submit"
-                      className="w-full py-3.5 bg-primary hover:bg-primary-light text-white font-bold text-xs uppercase tracking-widest rounded-xl transition-all shadow-md flex justify-center items-center gap-2 cursor-pointer"
+                      disabled={isSubmitting}
+                      className="w-full py-3.5 bg-primary hover:bg-primary-light text-white font-bold text-xs uppercase tracking-widest rounded-xl transition-all shadow-md flex justify-center items-center gap-2 cursor-pointer disabled:opacity-70"
                     >
                       <Send className="w-4 h-4 text-gold" />
-                      <span>Send Message</span>
+                      <span>{isSubmitting ? 'Sending...' : 'Send Message'}</span>
                     </button>
                   </form>
                 ) : (

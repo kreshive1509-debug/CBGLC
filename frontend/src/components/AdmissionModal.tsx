@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { X, Calendar, Phone, Mail, GraduationCap, CheckCircle, Award } from 'lucide-react';
+import { X, Calendar, Clock, Phone, Mail, GraduationCap, CheckCircle, Award } from 'lucide-react';
 import { useAdmissionModal } from '../context/AdmissionContext';
 import { COLLEGE_INFO } from '../constants/data';
 import { apiUrl } from '../utils/api';
@@ -291,6 +291,13 @@ export const AdmissionModal: React.FC = () => {
                     >
                       <span>{isLoading ? 'Submitting...' : 'Submit Admission Enquiry'}</span>
                     </button>
+                  </div>
+
+                  <div className="mt-2.5 flex items-start gap-2.5 rounded-xl border border-slate-100 bg-slate-50/80 px-4 py-3">
+                    <Clock className="mt-0.5 h-4 w-4 shrink-0 text-primary/70" />
+                    <p className="text-[11px] leading-relaxed text-slate-500">
+                      Submission may take a few extra moments as our servers automatically scale to reduce unnecessary energy consumption and support a more sustainable digital infrastructure. Thank you for your patience.
+                    </p>
                   </div>
                 </form>
               </div>

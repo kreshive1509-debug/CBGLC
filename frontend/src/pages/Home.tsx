@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
@@ -29,6 +29,9 @@ import { SEOHelper } from '../components/SEOHelper';
 import { BreakingNewsTicker } from '../components/BreakingNewsTicker';
 import { SectionHeading } from '../components/SectionHeading';
 import { Counter } from '../components/Counter';
+import { apiUrl } from '../utils/api';
+import { formatIndianNumber } from '../utils/formatters';
+import { getOrCreateVisitorToken, hasVisitorBeenCounted, markVisitorCounted } from '../utils/visitor';
 import {
   COLLEGE_INFO,
   HIGHLIGHTS,
@@ -71,6 +74,62 @@ const formatSeats = (seats: unknown) => {
 export const Home: React.FC = () => {
   const { openModal } = useAdmissionModal();
   const { settings, founder, manager, notices, admissionSettings, galleryImages } = useData();
+  const [visitorCount, setVisitorCount] = useState<number | null>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadVisitorStats = async () => {
+      const [countResponse, registrationResponse] = await Promise.allSettled([
+        fetch(apiUrl('/api/visitor-count'), { cache: 'no-store' }),
+        (async () => {
+          const token = getOrCreateVisitorToken();
+          if (!token || hasVisitorBeenCounted(token)) {
+            return null;
+          }
+
+          const response = await fetch(apiUrl('/api/visitor'), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ visitorToken: token }),
+          });
+
+          if (response.ok) {
+            markVisitorCounted(token);
+          }
+
+          return response;
+        })(),
+      ]);
+
+      const fetchedCounts: number[] = [];
+
+      if (countResponse.status === 'fulfilled' && countResponse.value.ok) {
+        const payload = await countResponse.value.json();
+        if (typeof payload.totalVisitors === 'number') {
+          fetchedCounts.push(payload.totalVisitors);
+        }
+      }
+
+      if (registrationResponse.status === 'fulfilled' && registrationResponse.value?.ok) {
+        const payload = await registrationResponse.value.json();
+        if (typeof payload.totalVisitors === 'number') {
+          fetchedCounts.push(payload.totalVisitors);
+        }
+      }
+
+      if (isMounted) {
+        const nextCount = fetchedCounts.length ? Math.max(...fetchedCounts, 10000) : 10000;
+        setVisitorCount(nextCount);
+      }
+    };
+
+    void loadVisitorStats();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const homeCourses = (Array.isArray(settings.courses) && settings.courses.length ? settings.courses : [
     {
@@ -246,6 +305,21 @@ export const Home: React.FC = () => {
               {settings.heroSecondaryCtaText || settings.brochureButtonText}
             </button>
           </motion.div>
+
+          {visitorCount !== null && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.65 }}
+              className="mt-6 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-4 py-2 text-xs font-semibold text-white/90 backdrop-blur-md shadow-lg shadow-black/10"
+            >
+              <Users className="w-4 h-4 text-gold" />
+              <span>
+                <Counter start={10000} end={visitorCount} duration={1200} formatter={formatIndianNumber} />
+                <span className="ml-1 uppercase tracking-[0.25em] text-[10px] text-white/70">Visitors</span>
+              </span>
+            </motion.div>
+          )}
 
           {/* Bottom badges/attributes */}
           <motion.div

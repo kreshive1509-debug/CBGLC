@@ -32,6 +32,7 @@ import { GalleryManagement } from './GalleryManagement';
 import { LeadershipManagement } from './LeadershipManagement';
 import { motion, AnimatePresence } from 'framer-motion';
 import { apiUrl } from '../../utils/api';
+import { formatAdminTimestamp, formatIndianNumber } from '../../utils/formatters';
 
 export function AdminDashboard() {
   const { user, token, logout, isSimulated } = useAdminAuth();
@@ -92,6 +93,14 @@ export function AdminDashboard() {
   const [noticeSearch, setNoticeSearch] = useState('');
   const [noticeFilterCategory, setNoticeFilterCategory] = useState('');
   const [noticeFilterStatus, setNoticeFilterStatus] = useState('');
+  const [visitorStats, setVisitorStats] = useState<{
+    totalVisitors: number;
+    todayVisitors: number;
+    thisWeekVisitors: number;
+    thisMonthVisitors: number;
+    lastUpdated: string | null;
+  } | null>(null);
+  const [visitorStatsLoading, setVisitorStatsLoading] = useState(false);
 
   // Sync state with DataContext values when loaded
   useEffect(() => {
@@ -138,6 +147,41 @@ export function AdminDashboard() {
       });
     }
   }, [settings, founder, manager]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadVisitorStats = async () => {
+      setVisitorStatsLoading(true);
+      try {
+        const res = await fetch(apiUrl('/api/visitor-stats'), { cache: 'no-store' });
+        if (!res.ok) return;
+
+        const data = await res.json();
+        if (isMounted) {
+          setVisitorStats({
+            totalVisitors: typeof data.totalVisitors === 'number' ? data.totalVisitors : 10000,
+            todayVisitors: typeof data.todayVisitors === 'number' ? data.todayVisitors : 0,
+            thisWeekVisitors: typeof data.thisWeekVisitors === 'number' ? data.thisWeekVisitors : 0,
+            thisMonthVisitors: typeof data.thisMonthVisitors === 'number' ? data.thisMonthVisitors : 0,
+            lastUpdated: data.lastUpdated || null,
+          });
+        }
+      } catch (error) {
+        console.warn('Unable to load visitor statistics.', error);
+      } finally {
+        if (isMounted) {
+          setVisitorStatsLoading(false);
+        }
+      }
+    };
+
+    void loadVisitorStats();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const handleLogout = async () => {
     await logout();
@@ -592,6 +636,39 @@ export function AdminDashboard() {
                     <p className="text-3xl font-extrabold tracking-tight">{stat.value}</p>
                   </div>
                 ))}
+              </div>
+
+              <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-2">
+                  <div>
+                    <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider">Visitor Analytics</h3>
+                    <p className="text-[11px] text-slate-500 mt-1">Read-only production metrics powered by MongoDB.</p>
+                  </div>
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                    {visitorStatsLoading ? 'Refreshing' : 'Live Summary'}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                  {[
+                    { label: 'Total Visitors', value: visitorStats?.totalVisitors ?? 10000 },
+                    { label: 'Today', value: visitorStats?.todayVisitors ?? 0 },
+                    { label: 'This Week', value: visitorStats?.thisWeekVisitors ?? 0 },
+                    { label: 'This Month', value: visitorStats?.thisMonthVisitors ?? 0 },
+                  ].map((item) => (
+                    <div key={item.label} className="rounded-xl border border-slate-100 bg-slate-50/80 p-4">
+                      <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-500">{item.label}</p>
+                      <p className="mt-2 text-2xl font-extrabold tracking-tight text-slate-900">
+                        {formatIndianNumber(item.value)}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-[11px] text-slate-500">
+                  <span>Total visitor count starts at 10,000 and increments only for unique visitors.</span>
+                  <span>Last Updated: <strong className="font-semibold text-slate-700">{formatAdminTimestamp(visitorStats?.lastUpdated)}</strong></span>
+                </div>
               </div>
 
               {/* Quick actions & Activity */}

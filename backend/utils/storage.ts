@@ -10,12 +10,13 @@ import AdmissionSettings from '../models/AdmissionSettings';
 import AdmissionEnquiry from '../models/AdmissionEnquiry';
 import GalleryImage from '../models/GalleryImage';
 import Leader from '../models/Leader';
+import ContactMessage from '../models/ContactMessage';
 
 const Notice = _Notice as any;
 const GalleryImageModel: any = GalleryImage;
 const LeaderModel: any = Leader;
 
-const LOCAL_DB_PATH = path.join(process.cwd(), 'backend', 'data', 'db.json');
+const LOCAL_DB_PATH = path.join(process.cwd(), 'data', 'db.json');
 
 const toStringArray = (value: any): string[] => {
   if (!Array.isArray(value)) return [];
@@ -63,7 +64,7 @@ const normalizeSettingsPayload = (updateData: any) => ({
 const readLocalDB = () => {
   try {
     if (!fs.existsSync(LOCAL_DB_PATH)) {
-      return { settings: {}, founder: {}, manager: {}, notices: [], galleryImages: [], leaders: [], admissionSettings: {}, enquiries: [] };
+      return { settings: {}, founder: {}, manager: {}, notices: [], galleryImages: [], leaders: [], admissionSettings: {}, enquiries: [], contactMessages: [] };
     }
     const data = fs.readFileSync(LOCAL_DB_PATH, 'utf-8');
     const parsed = JSON.parse(data);
@@ -85,10 +86,13 @@ const readLocalDB = () => {
     if (!parsed.enquiries) {
         parsed.enquiries = [];
     }
+    if (!parsed.contactMessages) {
+        parsed.contactMessages = [];
+    }
     return parsed;
   } catch (err) {
     console.error('Error reading local JSON database:', err);
-    return { settings: {}, founder: {}, manager: {}, notices: [], galleryImages: [], leaders: [], admissionSettings: {}, enquiries: [] };
+    return { settings: {}, founder: {}, manager: {}, notices: [], galleryImages: [], leaders: [], admissionSettings: {}, enquiries: [], contactMessages: [] };
   }
 };
 
@@ -723,6 +727,27 @@ export const storage = {
       db.enquiries[index].status = status;
       writeLocalDB(db);
       return db.enquiries[index];
+    }
+  },
+
+  // --- CONTACT MESSAGES ---
+  async createContactMessage(messageData: any) {
+    if (isMongoConnected()) {
+      const message = new ContactMessage(messageData);
+      await message.save();
+      return message;
+    } else {
+      const db = readLocalDB();
+      const newMessage = {
+        _id: 'c_' + Date.now(),
+        ...messageData,
+        status: messageData.status || 'New',
+        timestamp: messageData.timestamp || new Date().toISOString()
+      };
+      db.contactMessages = db.contactMessages || [];
+      db.contactMessages.push(newMessage);
+      writeLocalDB(db);
+      return newMessage;
     }
   },
 

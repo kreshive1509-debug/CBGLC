@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { rateLimit } from 'express-rate-limit';
 import { getSettings, updateSettings } from '../controllers/settingsController';
 import { getFounder, updateFounder } from '../controllers/founderController';
 import { getManager, updateManager } from '../controllers/managerController';
@@ -9,9 +10,28 @@ import {
   updateNotice,
   deleteNotice,
   togglePublishNotice,
-  togglePinNotice
-} from '../controllers/noticeController';import { getGalleryImages, getGalleryImageById, createGalleryImage, updateGalleryImage, deleteGalleryImage, toggleGalleryImageVisibility } from '../controllers/galleryController';
-import { getLeaders, getLeaderById, createLeader, updateLeader, deleteLeader, toggleLeaderPublish, toggleLeaderFeatured } from '../controllers/leaderController';import { createEnquiry } from '../controllers/admission.controller';
+  togglePinNotice,
+} from '../controllers/noticeController';
+import {
+  getGalleryImages,
+  getGalleryImageById,
+  createGalleryImage,
+  updateGalleryImage,
+  deleteGalleryImage,
+  toggleGalleryImageVisibility,
+} from '../controllers/galleryController';
+import {
+  getLeaders,
+  getLeaderById,
+  createLeader,
+  updateLeader,
+  deleteLeader,
+  toggleLeaderPublish,
+  toggleLeaderFeatured,
+} from '../controllers/leaderController';
+import { createEnquiry } from '../controllers/admission.controller';
+import { createContactMessage } from '../controllers/contactController';
+import { getVisitorCount, getVisitorStats, registerVisitor } from '../controllers/visitorController';
 import admissionRoutes from './admission.routes';
 import admissionSettingsRoutes from './admissionSettings.routes';
 import { verifyFirebaseToken } from '../middlewares/authMiddleware';
@@ -35,8 +55,22 @@ router.get('/gallery', getGalleryImages);
 router.get('/gallery/:id', getGalleryImageById);
 router.get('/notices', getNotices);
 router.get('/notices/:id', getNoticeById);
+router.get('/visitor-count', getVisitorCount);
+router.get('/visitor-stats', getVisitorStats);
 router.post('/enquiries', createEnquiry);
+router.post('/contact', createContactMessage);
 router.use('/admission-settings', admissionSettingsRoutes);
+router.post(
+  '/visitor',
+  rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 120,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: 'Too many visitor requests, please try again later.' },
+  }),
+  registerVisitor
+);
 
 // --- PROTECTED ROUTES (ADMIN ONLY) ---
 router.put('/settings', verifyFirebaseToken, updateSettings);

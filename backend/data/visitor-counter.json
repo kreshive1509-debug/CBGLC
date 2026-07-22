@@ -1,0 +1,25 @@
+{
+  "counter": {
+    "totalVisitors": 10001,
+    "createdAt": "2026-07-22T08:26:06.124Z",
+    "updatedAt": "2026-07-22T08:26:06.124Z"
+  },
+  "metrics": {
+    "day": {
+      "2026-07-22": 1
+    },
+    "week": {
+      "2026-W30": 1
+    },
+    "month": {
+      "2026-07": 1
+    }
+  },
+  "sessions": {
+    "cc2fae45816eb501cdd56c9f722edb1210f923a89819772b82bb5c9ed0b82854": {
+      "source": "body-token",
+      "firstSeenAt": "2026-07-22T08:26:06.124Z",
+      "lastSeenAt": "2026-07-22T08:26:06.340Z"
+    }
+  }
+}
