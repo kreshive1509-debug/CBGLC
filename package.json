@@ -6,8 +6,13 @@
   "scripts": {
     "dev": "node ./node_modules/tsx/dist/cli.mjs server.ts",
     "sitemap": "node ./node_modules/tsx/dist/cli.mjs scripts/generate-sitemap.ts",
-    "build": "node ./node_modules/tsx/dist/cli.mjs scripts/generate-sitemap.ts && node ./node_modules/vite/bin/vite.js build && esbuild server.ts --bundle --platform=node --format=cjs --packages=external --sourcemap --outfile=dist/server.cjs",
+    "build:client": "node ./node_modules/tsx/dist/cli.mjs scripts/generate-sitemap.ts && node ./node_modules/vite/bin/vite.js build",
+    "build:frontend": "npm run build:client",
+    "build:server": "esbuild server.ts --bundle --platform=node --format=cjs --packages=external --sourcemap --outfile=dist/server.cjs",
+    "build:backend": "npm run build:server",
+    "build": "npm run build:client && npm run build:server",
     "start": "node dist/server.cjs",
+    "start:backend": "node dist/server.cjs",
     "clean": "node -e \"const fs=require('fs');const path=require('path');['dist','server.js'].forEach((p)=>{if(fs.existsSync(p)){fs.rmSync(p,{recursive:true,force:true})}})\"",
     "lint": "node ./node_modules/typescript/bin/tsc --noEmit"
   },

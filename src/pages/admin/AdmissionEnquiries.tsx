@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAdminAuth } from '../../context/AdminAuthContext';
 import { useNavigate } from 'react-router-dom';
+import { apiUrl } from '../../utils/api';
 import {
   Scale,
   Search,
@@ -26,7 +27,7 @@ export function AdmissionEnquiries() {
 
   const fetchEnquiries = async () => {
     try {
-      const res = await fetch('/api/enquiries', {
+      const res = await fetch(apiUrl('/api/enquiries'), {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await res.json();
@@ -40,7 +41,7 @@ export function AdmissionEnquiries() {
 
   const updateStatus = async (id: string, status: string) => {
     try {
-      await fetch(`/api/enquiries/${id}`, {
+      await fetch(apiUrl(`/api/enquiries/${id}`), {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',

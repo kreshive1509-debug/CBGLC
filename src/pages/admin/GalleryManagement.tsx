@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useAdminAuth } from '../../context/AdminAuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
+import { apiUrl } from '../../utils/api';
 import {
   Plus,
   Search,
@@ -56,7 +57,7 @@ export function GalleryManagement({ notify }: GalleryManagementProps) {
   const fetchImages = async () => {
     setIsLoading(true);
     try {
-      const res = await fetch('/api/gallery');
+      const res = await fetch(apiUrl('/api/gallery'));
       if (res.ok) {
         const data = await res.json();
         setImages(data);
@@ -129,7 +130,7 @@ export function GalleryManagement({ notify }: GalleryManagementProps) {
         return;
       }
 
-      const endpoint = editingImage ? `/api/gallery/${editingImage._id}` : '/api/gallery';
+      const endpoint = editingImage ? apiUrl(`/api/gallery/${editingImage._id}`) : apiUrl('/api/gallery');
       const method = editingImage ? 'PUT' : 'POST';
       const res = await fetch(endpoint, {
         method,
@@ -170,7 +171,7 @@ export function GalleryManagement({ notify }: GalleryManagementProps) {
         return;
       }
 
-      const res = await fetch(`/api/gallery/${confirmDeleteId}`, {
+      const res = await fetch(apiUrl(`/api/gallery/${confirmDeleteId}`), {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${authToken}` }
       });
@@ -198,7 +199,7 @@ export function GalleryManagement({ notify }: GalleryManagementProps) {
         return;
       }
 
-      const res = await fetch(`/api/gallery/${item._id}/visible`, {
+      const res = await fetch(apiUrl(`/api/gallery/${item._id}/visible`), {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -230,7 +231,7 @@ export function GalleryManagement({ notify }: GalleryManagementProps) {
         return;
       }
 
-      const res = await fetch(`/api/gallery/${item._id}`, {
+      const res = await fetch(apiUrl(`/api/gallery/${item._id}`), {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

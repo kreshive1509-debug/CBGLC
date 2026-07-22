@@ -5,6 +5,7 @@ import { Save, RotateCcw, Globe, Layout, Image, Phone, Mail, Share2, MapPin, Gra
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
 import { signalCmsUpdated } from '../../utils/cmsSync';
+import { apiUrl } from '../../utils/api';
 
 export function WebsiteSettingsPage() {
   const { settings, refreshData } = useData();
@@ -49,7 +50,7 @@ export function WebsiteSettingsPage() {
         return;
       }
 
-      const response = await fetch('/api/settings', {
+      const response = await fetch(apiUrl('/api/settings'), {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

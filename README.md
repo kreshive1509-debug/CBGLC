@@ -64,6 +64,8 @@ Create a `.env` file in the root directory based on the following `.env.example`
 PORT=3000
 NODE_ENV=production
 APP_URL="https://cbglawcollege.in"
+FRONTEND_URL="https://your-vercel-frontend.vercel.app"
+CORS_ORIGIN="https://your-vercel-frontend.vercel.app"
 
 # GEMINI AI SDK KEY
 GEMINI_API_KEY="YOUR_GEMINI_API_KEY"
@@ -75,6 +77,7 @@ MONGODB_URI="mongodb+srv://<user>:<password>@cluster.mongodb.net/cbglc"
 JWT_SECRET="YOUR_SUPER_SECRET_JWT_SIGNING_PHRASE"
 
 # FIREBASE CONFIGURATION (For Admin Client Auth)
+VITE_API_URL="https://your-render-backend.onrender.com"
 VITE_FIREBASE_API_KEY="AIzaSy..."
 VITE_FIREBASE_AUTH_DOMAIN="cbglc-auth.firebaseapp.com"
 VITE_FIREBASE_PROJECT_ID="cbglc-auth"
@@ -118,27 +121,34 @@ npm run dev
 The server will start running at `http://localhost:3000`. This launches the unified Vite development compiler side-by-side with the Express API.
 
 ### 3. Build & Run in Production
-To build the static files and compile the Express server into a highly optimized CommonJS single bundle:
+To build the frontend bundle and compile the Express server into a production CommonJS bundle:
 ```bash
 npm run build
 npm start
 ```
-The application compiles everything cleanly into the `/dist` folder. `npm start` runs the compiled production-ready server from `dist/server.cjs`.
+The application compiles the Vite frontend assets and the backend server into the `/dist` folder. `npm start` runs the compiled production-ready API server from `dist/server.cjs`.
 
 ---
 
 ## ☁️ Deployment Instructions
 
-### 1. Cloud Run / Docker Container Ingress
-The portal runs as a unified custom server. In containers, configure:
-- **Port**: Bind to host `0.0.0.0` on Port `3000` (controlled natively in our `server.ts` setup).
-- **Ingress**: Serve all web and api routes via port `3000`.
+### 1. Vercel Frontend
+- Connect the repository as a Vercel project.
+- Set the **Build Command** to `npm run build:frontend`.
+- Set the **Output Directory** to `dist`.
+- Add the frontend environment variable `VITE_API_URL` with the Render backend URL.
+- Keep the SPA rewrite to `index.html` so client-side routing continues to work.
 
-### 2. PaaS Deployments (Railway, Render, Heroku)
-- Link your GitHub repository.
-- Specify the **Build Command**: `npm run build`
-- Specify the **Start Command**: `npm start`
-- Populate the required variables listed in `.env.example` inside your platform's environment settings.
+### 2. Render Backend
+- Connect the same repository as a separate Render Web Service.
+- Set the **Build Command** to `npm run build:backend`.
+- Set the **Start Command** to `npm run start:backend`.
+- Add `NODE_ENV=production`, `MONGODB_URI`, `JWT_SECRET`, `FIREBASE_PROJECT_ID`, SMTP variables, and `FRONTEND_URL` or `CORS_ORIGIN` for your Vercel domain.
+- Use `/health` as the health check path.
+
+### 3. Hostinger Domain
+- Point the domain to the Vercel frontend using the DNS records Vercel provides.
+- Keep API traffic on the Vercel frontend domain via `VITE_API_URL` so browser requests go to Render.
 
 ---
 

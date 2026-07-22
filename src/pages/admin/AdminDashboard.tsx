@@ -31,6 +31,7 @@ import { AdmissionManagement } from './AdmissionManagement';
 import { GalleryManagement } from './GalleryManagement';
 import { LeadershipManagement } from './LeadershipManagement';
 import { motion, AnimatePresence } from 'framer-motion';
+import { apiUrl } from '../../utils/api';
 
 export function AdminDashboard() {
   const { user, token, logout, isSimulated } = useAdminAuth();
@@ -164,7 +165,7 @@ export function AdminDashboard() {
     e.preventDefault();
     setActionLoading(true);
     try {
-      const res = await fetch('/api/founder', {
+      const res = await fetch(apiUrl('/api/founder'), {
         method: 'PUT',
         headers: getAuthHeaders(),
         body: JSON.stringify(founderForm)
@@ -187,7 +188,7 @@ export function AdminDashboard() {
     e.preventDefault();
     setActionLoading(true);
     try {
-      const res = await fetch('/api/manager', {
+      const res = await fetch(apiUrl('/api/manager'), {
         method: 'PUT',
         headers: getAuthHeaders(),
         body: JSON.stringify(managerForm)
@@ -217,7 +218,7 @@ export function AdminDashboard() {
         ...contactForm
       };
 
-      const res = await fetch('/api/settings', {
+      const res = await fetch(apiUrl('/api/settings'), {
         method: 'PUT',
         headers: getAuthHeaders(),
         body: JSON.stringify(mergedPayload)
@@ -247,7 +248,7 @@ export function AdminDashboard() {
     
     try {
       console.log(`Attempting to delete notice with ID: ${id}`);
-      const res = await fetch(`/api/notices/${id}`, {
+      const res = await fetch(apiUrl(`/api/notices/${id}`), {
         method: 'DELETE',
         headers: getAuthHeaders()
       });
@@ -272,7 +273,7 @@ export function AdminDashboard() {
 
   const toggleNoticePublish = async (id: string, currentPublished: boolean) => {
     try {
-      const res = await fetch(`/api/notices/${id}/publish`, {
+      const res = await fetch(apiUrl(`/api/notices/${id}/publish`), {
         method: 'PATCH',
         headers: getAuthHeaders(),
         body: JSON.stringify({ published: !currentPublished })
@@ -288,7 +289,7 @@ export function AdminDashboard() {
 
   const toggleNoticePin = async (id: string, currentPinned: boolean) => {
     try {
-      const res = await fetch(`/api/notices/${id}/pin`, {
+      const res = await fetch(apiUrl(`/api/notices/${id}/pin`), {
         method: 'PATCH',
         headers: getAuthHeaders(),
         body: JSON.stringify({ pinned: !currentPinned })
@@ -343,7 +344,7 @@ export function AdminDashboard() {
       const method = editingNotice ? 'PUT' : 'POST';
       const endpoint = editingNotice ? `/api/notices/${editingNotice._id}` : '/api/notices';
 
-      const res = await fetch(endpoint, {
+      const res = await fetch(apiUrl(endpoint), {
         method,
         headers: getAuthHeaders(),
         body: JSON.stringify(noticeForm)

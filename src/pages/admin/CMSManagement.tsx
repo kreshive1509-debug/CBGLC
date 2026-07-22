@@ -27,6 +27,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { signalCmsUpdated } from '../../utils/cmsSync';
 import { COURSES } from '../../constants/data';
+import { apiUrl } from '../../utils/api';
 
 export function CMSManagement() {
   const { settings, refreshData } = useData();
@@ -210,7 +211,7 @@ export function CMSManagement() {
         courses: serializeCoursesForSave(formData.courses || [])
       };
 
-      const response = await fetch('/api/settings', {
+      const response = await fetch(apiUrl('/api/settings'), {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

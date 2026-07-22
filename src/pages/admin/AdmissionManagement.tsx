@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAdminAuth } from '../../context/AdminAuthContext';
 import { useData } from '../../context/DataContext';
+import { apiUrl } from '../../utils/api';
 import { Save, Database, AlertCircle, CheckCircle2 } from 'lucide-react';
 
 export function AdmissionManagement() {
@@ -17,7 +18,7 @@ export function AdmissionManagement() {
 
   const fetchDbStatus = async () => {
     try {
-      const res = await fetch('/api/db-status');
+      const res = await fetch(apiUrl('/api/db-status'));
       const data = await res.json();
       setDbStatus(data);
     } catch (err) {
@@ -27,7 +28,7 @@ export function AdmissionManagement() {
 
   const fetchSettings = async () => {
     try {
-      const res = await fetch('/api/admission-settings', {
+      const res = await fetch(apiUrl('/api/admission-settings'), {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await res.json();
@@ -43,7 +44,7 @@ export function AdmissionManagement() {
     e.preventDefault();
     setLoading(true);
     try {
-      const res = await fetch('/api/admission-settings', {
+      const res = await fetch(apiUrl('/api/admission-settings'), {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

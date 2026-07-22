@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useAdminAuth } from '../../context/AdminAuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
+import { apiUrl } from '../../utils/api';
 import {
   Plus,
   Search,
@@ -79,7 +80,7 @@ export function LeadershipManagement({ notify }: { notify: (msg: string, isError
   const fetchLeaders = async () => {
     setIsLoading(true);
     try {
-      const res = await fetch('/api/leaders', { cache: 'no-store' });
+      const res = await fetch(apiUrl('/api/leaders'), { cache: 'no-store' });
       if (res.ok) {
         const data = await res.json();
         setLeaders(data);
@@ -154,7 +155,7 @@ export function LeadershipManagement({ notify }: { notify: (msg: string, isError
 
     setActionLoading(true);
     try {
-      const endpoint = editingLeader ? `/api/leaders/${editingLeader._id}` : '/api/leaders';
+      const endpoint = editingLeader ? apiUrl(`/api/leaders/${editingLeader._id}`) : apiUrl('/api/leaders');
       const method = editingLeader ? 'PUT' : 'POST';
       const payload = buildLegacyLeaderPayload(formData, editingLeader);
       const res = await fetch(endpoint, {
@@ -188,7 +189,7 @@ export function LeadershipManagement({ notify }: { notify: (msg: string, isError
     if (!confirmDeleteId) return;
     setActionLoading(true);
     try {
-      const res = await fetch(`/api/leaders/${confirmDeleteId}`, {
+      const res = await fetch(apiUrl(`/api/leaders/${confirmDeleteId}`), {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -210,7 +211,7 @@ export function LeadershipManagement({ notify }: { notify: (msg: string, isError
   const toggleVisibility = async (leader: any) => {
     setActionLoading(true);
     try {
-      const res = await fetch(`/api/leaders/${leader._id}/publish`, {
+      const res = await fetch(apiUrl(`/api/leaders/${leader._id}/publish`), {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -236,7 +237,7 @@ export function LeadershipManagement({ notify }: { notify: (msg: string, isError
     const newOrder = (leader.displayOrder ?? 0) + delta;
     setActionLoading(true);
     try {
-      const res = await fetch(`/api/leaders/${leader._id}`, {
+      const res = await fetch(apiUrl(`/api/leaders/${leader._id}`), {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

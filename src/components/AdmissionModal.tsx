@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { X, Calendar, Phone, Mail, GraduationCap, CheckCircle, Award } from 'lucide-react';
 import { useAdmissionModal } from '../context/AdmissionContext';
 import { COLLEGE_INFO } from '../constants/data';
+import { apiUrl } from '../utils/api';
 
 export const AdmissionModal: React.FC = () => {
   const { isModalOpen, closeModal, selectedCourseId } = useAdmissionModal();
@@ -51,7 +52,7 @@ export const AdmissionModal: React.FC = () => {
     if (!validate()) return;
     setIsLoading(true);
     try {
-      const response = await fetch('/api/enquiries', {
+      const response = await fetch(apiUrl('/api/enquiries'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData)

@@ -1,10 +1,8 @@
 import 'dotenv/config';
 import express from "express";
-import path from "path";
 import cors from "cors";
 import helmet from "helmet";
 import { rateLimit } from "express-rate-limit";
-import { createServer as createViteServer } from "vite";
 import { connectDB } from "./backend/config/db";
 import { initFirebase } from "./backend/config/firebase";
 import apiRoutes from "./backend/routes/apiRoutes";
@@ -13,7 +11,26 @@ async function startServer() {
   const app = express();
   const PORT = Number(process.env.PORT || 3000);
   const isProduction = process.env.NODE_ENV === "production";
-  const allowedOrigins = new Set([process.env.APP_URL].filter(Boolean));
+  const allowedOrigins = new Set(
+    [process.env.FRONTEND_URL, process.env.APP_URL, process.env.CORS_ORIGIN]
+      .flatMap((value) => (value ? value.split(',') : []))
+      .map((value) => value.trim())
+      .filter(Boolean)
+  );
+  const corsOptions: cors.CorsOptions = {
+    origin(origin, callback) {
+      if (!isProduction || !origin || allowedOrigins.has(origin)) {
+        callback(null, true);
+        return;
+      }
+
+      callback(new Error(`Origin ${origin} is not allowed by CORS policy`));
+    },
+    methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    exposedHeaders: ['Content-Length'],
+    optionsSuccessStatus: 204,
+  };
 
   app.set('trust proxy', 1);
   await connectDB();
@@ -30,22 +47,21 @@ async function startServer() {
       },
     } : false,
   }));
-  app.use(cors({ origin(origin, callback) {
-    if (!isProduction || !origin || allowedOrigins.has(origin)) return callback(null, true);
-    callback(new Error('Origin is not allowed by CORS policy'));
-  }}));
+  app.use(cors(corsOptions));
+  app.options('*', cors(corsOptions));
   app.use(express.json({ limit: '100kb' }));
+
+  app.get('/health', (_req, res) => {
+    res.status(200).json({ service: 'cbgl-api', status: 'ok' });
+  });
 
   app.use('/api', rateLimit({ windowMs: 15 * 60 * 1000, max: 500, standardHeaders: true, legacyHeaders: false, message: { error: 'Too many requests, please try again later.' } }));
   app.use('/api', apiRoutes);
 
   if (!isProduction) {
+    const { createServer: createViteServer } = await import('vite');
     const vite = await createViteServer({ server: { middlewareMode: true }, appType: "spa" });
     app.use(vite.middlewares);
-  } else {
-    const distPath = path.join(process.cwd(), 'dist');
-    app.use(express.static(distPath));
-    app.get('*', (_req, res) => res.sendFile(path.join(distPath, 'index.html')));
   }
 
   app.use((_err: unknown, _req: express.Request, res: express.Response, _next: express.NextFunction) => {

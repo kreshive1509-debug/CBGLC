@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: cbgl-api
+    env: node
+    plan: free
+    buildCommand: npm run build:backend
+    startCommand: npm run start:backend
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production

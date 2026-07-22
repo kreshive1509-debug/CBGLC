@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { COLLEGE_INFO, FOUNDER_INFO, MANAGER_INFO, NOTICES, Notice } from '../constants/data';
 import { CMS_UPDATE_KEY } from '../utils/cmsSync';
+import { apiUrl } from '../utils/api';
 
 export interface WebsiteSettings {
   collegeName: string;
@@ -294,49 +295,49 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const refreshData = async () => {
     try {
       // Fetch settings
-      const settingsRes = await fetch('/api/settings');
+      const settingsRes = await fetch(apiUrl('/api/settings'));
       if (settingsRes.ok) {
         const data = await settingsRes.json();
         setSettings({ ...fallbackSettings, ...normalizeSettingsData(data) });
       }
 
       // Fetch founder
-      const founderRes = await fetch('/api/founder');
+      const founderRes = await fetch(apiUrl('/api/founder'));
       if (founderRes.ok) {
         const data = await founderRes.json();
         setFounder({ ...fallbackFounder, ...data });
       }
 
       // Fetch manager
-      const managerRes = await fetch('/api/manager');
+      const managerRes = await fetch(apiUrl('/api/manager'));
       if (managerRes.ok) {
         const data = await managerRes.json();
         setManager({ ...fallbackManager, ...data });
       }
 
       // Fetch notices
-      const noticesRes = await fetch('/api/notices');
+      const noticesRes = await fetch(apiUrl('/api/notices'));
       if (noticesRes.ok) {
         const data = await noticesRes.json();
         setNotices(data);
       }
 
       // Fetch leaders
-      const leadersRes = await fetch('/api/leaders', { cache: 'no-store' });
+      const leadersRes = await fetch(apiUrl('/api/leaders'), { cache: 'no-store' });
       if (leadersRes.ok) {
         const data = await leadersRes.json();
         setLeaders(data);
       }
 
       // Fetch gallery images
-      const galleryRes = await fetch('/api/gallery');
+      const galleryRes = await fetch(apiUrl('/api/gallery'));
       if (galleryRes.ok) {
         const data = await galleryRes.json();
         setGalleryImages(data);
       }
       
       // Fetch admission settings
-      const admissionRes = await fetch('/api/admission-settings');
+      const admissionRes = await fetch(apiUrl('/api/admission-settings'));
       if (admissionRes.ok) {
         const data = await admissionRes.json();
         setAdmissionSettings(data);
