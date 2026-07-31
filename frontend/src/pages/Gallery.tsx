@@ -2,16 +2,16 @@ import React, { useMemo, useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ZoomIn, ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { useData } from '../context/DataContext';
-import { GALLERY_IMAGES } from '../constants/data';
+import { CmsImage } from '../components/CmsImage';
 
 export const Gallery: React.FC = () => {
-  const { galleryImages } = useData();
+  const { galleryImages, backendOffline } = useData();
   const [activeCategory, setActiveCategory] = useState('All');
   const [selectedImage, setSelectedImage] = useState<any | null>(null);
   const [touchStart, setTouchStart] = useState(0);
   const [touchEnd, setTouchEnd] = useState(0);
 
-  const images = galleryImages.length ? galleryImages : GALLERY_IMAGES;
+  const images = Array.isArray(galleryImages) ? galleryImages : [];
   const categories = useMemo(() => {
     const uniqueCategories = Array.from(new Set(images.map((img: any) => img.category || 'Unknown'))).filter(Boolean);
     return ['All', ...uniqueCategories];
@@ -24,6 +24,8 @@ export const Gallery: React.FC = () => {
     }
     return images.filter((img: any) => img.category?.toLowerCase() === activeCategory.toLowerCase());
   }, [activeCategory, images]);
+
+  const gridItems = filteredImages.length > 0 ? filteredImages : Array.from({ length: 6 }, (_, index) => ({ id: `placeholder-${index}` }));
 
   // Find current image index for navigation
   const currentImageIndex = useMemo(() => {
@@ -140,45 +142,52 @@ export const Gallery: React.FC = () => {
             className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
           >
             <AnimatePresence mode="popLayout">
-              {filteredImages.map((img, index) => (
-                <motion.div
-                  key={img._id || img.id || `${img.url}-${index}`}
-                  layout
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.9 }}
-                  transition={{ duration: 0.4 }}
-                  whileHover={{ y: -5 }}
-                  onClick={() => setSelectedImage(img)}
-                  className="relative group overflow-hidden rounded-2xl shadow-sm hover:shadow-2xl border border-slate-100 aspect-4/3 bg-slate-100 cursor-pointer"
-                >
-                  <img
-                    src={img.url}
-                    alt={img.title}
-                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-                    referrerPolicy="no-referrer"
-                  />
-                  
-                  {/* Premium Glassmorphic Overlay on Hover */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-primary/80 via-primary/40 to-transparent backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-between p-6 text-white z-10">
-                    <div className="flex justify-end">
-                      <motion.div 
-                        whileHover={{ scale: 1.1 }}
-                        className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center text-white backdrop-blur-md border border-white/30 shadow-lg"
-                      >
-                        <ZoomIn className="w-5 h-5" />
-                      </motion.div>
-                    </div>
-                    <div>
-                      <span className="text-[10px] uppercase text-gold font-bold tracking-widest drop-shadow-sm">{img.category}</span>
-                      <h4 className="text-base font-serif font-bold mt-1 leading-tight drop-shadow-sm">{img.title}</h4>
-                    </div>
-                  </div>
+              {gridItems.map((img, index) => {
+                const hasImage = Boolean((img as any).url);
+                return (
+                  <motion.div
+                    key={(img as any)._id || (img as any).id || `${(img as any).url}-${index}`}
+                    layout
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.9 }}
+                    transition={{ duration: 0.4 }}
+                    whileHover={hasImage ? { y: -5 } : undefined}
+                    onClick={() => hasImage && setSelectedImage(img)}
+                    className={`relative group overflow-hidden rounded-2xl shadow-sm hover:shadow-2xl border border-slate-100 aspect-4/3 bg-slate-100 ${hasImage ? 'cursor-pointer' : 'cursor-default'}`}
+                  >
+                    <CmsImage
+                      src={(img as any).url}
+                      alt={(img as any).title}
+                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                      containerClassName="relative overflow-hidden w-full h-full bg-slate-100"
+                      placeholderText="Image unavailable"
+                      isOffline={backendOffline || !hasImage}
+                    />
 
-                  {/* Shadow animation */}
-                  <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none ring-2 ring-primary/50 shadow-[inset_0_0_30px_rgba(79,70,229,0.2)]" />
-                </motion.div>
-              ))}
+                    {hasImage && (
+                      <>
+                        <div className="absolute inset-0 bg-gradient-to-t from-primary/80 via-primary/40 to-transparent backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-between p-6 text-white z-10">
+                          <div className="flex justify-end">
+                            <motion.div
+                              whileHover={{ scale: 1.1 }}
+                              className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center text-white backdrop-blur-md border border-white/30 shadow-lg"
+                            >
+                              <ZoomIn className="w-5 h-5" />
+                            </motion.div>
+                          </div>
+                          <div>
+                            <span className="text-[10px] uppercase text-gold font-bold tracking-widest drop-shadow-sm">{(img as any).category}</span>
+                            <h4 className="text-base font-serif font-bold mt-1 leading-tight drop-shadow-sm">{(img as any).title}</h4>
+                          </div>
+                        </div>
+
+                        <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none ring-2 ring-primary/50 shadow-[inset_0_0_30px_rgba(79,70,229,0.2)]" />
+                      </>
+                    )}
+                  </motion.div>
+                );
+              })}
             </AnimatePresence>
           </motion.div>
 
@@ -213,15 +222,13 @@ export const Gallery: React.FC = () => {
               {/* Main Image Container */}
               <div className="relative bg-slate-900 rounded-2xl overflow-hidden shadow-2xl border border-slate-700">
                 <div className="relative aspect-video sm:aspect-[16/10] bg-slate-950">
-                  <motion.img
-                    key={selectedImage._id || selectedImage.id}
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    src={selectedImage.url}
-                    alt={selectedImage.title}
+                  <CmsImage
+                    src={selectedImage?.url || ''}
+                    alt={selectedImage?.title || 'Gallery image'}
                     className="w-full h-full object-contain"
-                    referrerPolicy="no-referrer"
+                    containerClassName="relative w-full h-full bg-slate-950"
+                    placeholderText="Image unavailable"
+                    isOffline={backendOffline || !selectedImage?.url}
                   />
                   
                   {/* Close Button */}

@@ -2,13 +2,14 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { PhoneCall, ArrowRight } from 'lucide-react';
 import { SectionHeading } from '../components/SectionHeading';
+import { CmsImage } from '../components/CmsImage';
 import { COLLEGE_INFO, FOUNDER_INFO, MANAGER_INFO } from '../constants/data';
 import { useAdmissionModal } from '../context/AdmissionContext';
 import { useData } from '../context/DataContext';
 
 export const Management: React.FC = () => {
   const { openModal } = useAdmissionModal();
-  const { leaders, founder, manager } = useData();
+  const { leaders, founder, manager, backendOffline } = useData();
 
   const coreLeaderNames = [
     founder?.name || FOUNDER_INFO.name,
@@ -101,11 +102,13 @@ export const Management: React.FC = () => {
             >
               <div className="w-full md:w-1/3 shrink-0">
                 <div className="relative overflow-hidden rounded-2xl border border-slate-100 aspect-square md:aspect-3/4 bg-slate-100">
-                  <img
-                    src={founder?.googleDrivePhotoUrl || FOUNDER_INFO.image}
+                  <CmsImage
+                    src={founder?.googleDrivePhotoUrl || ''}
                     alt={founder?.name || FOUNDER_INFO.name}
                     className="w-full h-full object-cover"
-                    referrerPolicy="no-referrer"
+                    containerClassName="relative overflow-hidden w-full h-full bg-slate-100"
+                    placeholderText="Image unavailable"
+                    isOffline={backendOffline}
                   />
                 </div>
                 <div className="text-center md:text-left mt-3.5">
@@ -144,11 +147,13 @@ export const Management: React.FC = () => {
             >
               <div className="w-full md:w-1/3 shrink-0">
                 <div className="relative overflow-hidden rounded-2xl border border-slate-100 aspect-square md:aspect-3/4 bg-slate-100">
-                  <img
-                    src={manager?.googleDrivePhotoUrl || MANAGER_INFO.image}
+                  <CmsImage
+                    src={manager?.googleDrivePhotoUrl || ''}
                     alt={manager?.name || MANAGER_INFO.name}
                     className="w-full h-full object-cover"
-                    referrerPolicy="no-referrer"
+                    containerClassName="relative overflow-hidden w-full h-full bg-slate-100"
+                    placeholderText="Image unavailable"
+                    isOffline={backendOffline}
                   />
                 </div>
                 <div className="text-center md:text-left mt-3.5">

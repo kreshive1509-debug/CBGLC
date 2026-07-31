@@ -29,6 +29,7 @@ import { SEOHelper } from '../components/SEOHelper';
 import { BreakingNewsTicker } from '../components/BreakingNewsTicker';
 import { SectionHeading } from '../components/SectionHeading';
 import { Counter } from '../components/Counter';
+import { CmsImage } from '../components/CmsImage';
 import { apiUrl } from '../utils/api';
 import { apiFetch, safeJson } from '../utils/http';
 import { formatIndianNumber } from '../utils/formatters';
@@ -41,7 +42,6 @@ import {
   FACILITIES,
   FOUNDER_INFO,
   MANAGER_INFO,
-  GALLERY_IMAGES,
   NOTICES,
   STATS
 } from '../constants/data';
@@ -74,7 +74,7 @@ const formatSeats = (seats: unknown) => {
 
 export const Home: React.FC = () => {
   const { openModal } = useAdmissionModal();
-  const { settings, founder, manager, notices, admissionSettings, galleryImages } = useData();
+  const { settings, founder, manager, notices, admissionSettings, galleryImages, backendOffline } = useData();
   const [visitorCount, setVisitorCount] = useState<number | null>(null);
 
   useEffect(() => {
@@ -148,7 +148,7 @@ export const Home: React.FC = () => {
       name: 'B.A. LL.B (5 Years Integrated)',
       shortDescription: 'An elite integrated course combining liberal arts and law, tailor-made for students immediately after high school aiming for legal mastery.',
       duration: '5 Years (10 Semesters)',
-      seats: '120 Seats',
+      seats: '60 Seats',
       type: 'Integrated Undergraduate Degree',
       eligibility: '10+2 or equivalent examination from a recognized Board with minimum 45% marks (40% for SC/ST candidates as per BCI rules).',
       displayOrder: 1
@@ -166,7 +166,7 @@ export const Home: React.FC = () => {
     }))
     .sort((a: any, b: any) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0));
 
-  const previewImages = galleryImages.length ? galleryImages.slice(0, 6) : GALLERY_IMAGES.slice(0, 6);
+  const previewImages = Array.isArray(galleryImages) ? galleryImages.slice(0, 6) : [];
 
   // Use admissionSettings if available, otherwise fallback to settings
   const currentAdmissionStatus = admissionSettings?.admissionStatus || settings.admissionStatus;
@@ -222,7 +222,7 @@ export const Home: React.FC = () => {
             initial={{ scale: 1.1 }}
             animate={{ scale: 1.0 }}
             transition={{ duration: 10, ease: 'easeOut' }}
-            src={settings.heroBackgroundUrl || "https://images.unsplash.com/photo-1562774053-701939374585?auto=format&fit=crop&w=1920&q=80"}
+            src={settings.heroBackgroundUrl || "https://i.ibb.co/KjmXW32M/DSC08842.jpg"}
             alt={`${settings.collegeName} Campus`}
             className="w-full h-full object-cover opacity-35 filter brightness-95"
             referrerPolicy="no-referrer"
@@ -431,7 +431,7 @@ export const Home: React.FC = () => {
               />
 
               <p className="text-slate-600 text-sm sm:text-base leading-relaxed mb-6 -mt-6">
-                Chandra Bhanu Gupta Law College, Lucknow is an institution established to pioneer legal education, foster professional accountability, and instil public responsibility among legal aspirants. Rooted in the noble ideals of Dr. Chandra Bhanu Gupta, the college provides comprehensive legal pathways and advanced research domains affiliated with the <strong>University of Lucknow</strong>.
+                Chandra Bhanu Gupta Law College, Lucknow is an institution established to pioneer legal education, foster professional accountability, and instil public responsibility among legal aspirants. Rooted in the noble ideals of Late. Shree Chandra Bhanu Gupta, the college provides comprehensive legal pathways and advanced research domains affiliated with the <strong>University of Lucknow</strong>.
               </p>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full mb-8">
@@ -688,11 +688,13 @@ export const Home: React.FC = () => {
             >
               <div className="w-full md:w-1/3 shrink-0">
                 <div className="relative overflow-hidden rounded-2xl border border-slate-100 aspect-square md:aspect-3/4">
-                  <img
-                    src={founder.googleDrivePhotoUrl || FOUNDER_INFO.image}
+                  <CmsImage
+                    src={founder.googleDrivePhotoUrl || ''}
                     alt={founder.name}
                     className="w-full h-full object-cover filter contrast-102"
-                    referrerPolicy="no-referrer"
+                    containerClassName="relative overflow-hidden w-full h-full bg-slate-100"
+                    placeholderText="Image unavailable"
+                    isOffline={backendOffline}
                   />
                 </div>
                 <div className="text-center md:text-left mt-3.5">
@@ -732,11 +734,13 @@ export const Home: React.FC = () => {
             >
               <div className="w-full md:w-1/3 shrink-0">
                 <div className="relative overflow-hidden rounded-2xl border border-slate-100 aspect-square md:aspect-3/4">
-                  <img
-                    src={manager.googleDrivePhotoUrl || MANAGER_INFO.image}
+                  <CmsImage
+                    src={manager.googleDrivePhotoUrl || ''}
                     alt={manager.name}
                     className="w-full h-full object-cover filter contrast-102"
-                    referrerPolicy="no-referrer"
+                    containerClassName="relative overflow-hidden w-full h-full bg-slate-100"
+                    placeholderText="Image unavailable"
+                    isOffline={backendOffline}
                   />
                 </div>
                 <div className="text-center md:text-left mt-3.5">

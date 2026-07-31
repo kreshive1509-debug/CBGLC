@@ -121,6 +121,7 @@ interface DataContextType {
   galleryImages: any[];
   admissionSettings: AdmissionSettings | null;
   isLoading: boolean;
+  backendOffline: boolean;
   refreshData: () => Promise<void>;
 }
 
@@ -292,60 +293,108 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [galleryImages, setGalleryImages] = useState<any[]>([]);
   const [admissionSettings, setAdmissionSettings] = useState<AdmissionSettings | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [backendOffline, setBackendOffline] = useState(false);
 
   const refreshData = async () => {
+    let requestFailed = false;
+    setIsLoading(true);
+
+    const handleEndpointError = (context: string, error: unknown) => {
+      requestFailed = true;
+      console.warn(`Could not load ${context} from dynamic API endpoints, using fully integrated fallback data.`, error);
+    };
+
     try {
       // Fetch settings
       const settingsRes = await apiFetch(apiUrl('/api/settings'), {}, 'DataContext');
-      if (settingsRes.ok) {
+      if (!settingsRes.ok) {
+        requestFailed = true;
+      } else {
         const data = await safeJson(settingsRes, 'DataContext settings');
         setSettings({ ...fallbackSettings, ...normalizeSettingsData(data) });
       }
+    } catch (error) {
+      handleEndpointError('settings', error);
+    }
 
+    try {
       // Fetch founder
       const founderRes = await apiFetch(apiUrl('/api/founder'), {}, 'DataContext');
-      if (founderRes.ok) {
+      if (!founderRes.ok) {
+        requestFailed = true;
+      } else {
         const data = await safeJson(founderRes, 'DataContext founder');
         setFounder({ ...fallbackFounder, ...data });
       }
+    } catch (error) {
+      handleEndpointError('founder', error);
+    }
 
+    try {
       // Fetch manager
       const managerRes = await apiFetch(apiUrl('/api/manager'), {}, 'DataContext');
-      if (managerRes.ok) {
+      if (!managerRes.ok) {
+        requestFailed = true;
+      } else {
         const data = await safeJson(managerRes, 'DataContext manager');
         setManager({ ...fallbackManager, ...data });
       }
+    } catch (error) {
+      handleEndpointError('manager', error);
+    }
 
+    try {
       // Fetch notices
       const noticesRes = await apiFetch(apiUrl('/api/notices'), {}, 'DataContext');
-      if (noticesRes.ok) {
+      if (!noticesRes.ok) {
+        requestFailed = true;
+      } else {
         const data = await safeJson(noticesRes, 'DataContext notices');
         setNotices(data);
       }
+    } catch (error) {
+      handleEndpointError('notices', error);
+    }
 
+    try {
       // Fetch leaders
       const leadersRes = await apiFetch(apiUrl('/api/leaders'), { cache: 'no-store' }, 'DataContext');
-      if (leadersRes.ok) {
+      if (!leadersRes.ok) {
+        requestFailed = true;
+      } else {
         const data = await safeJson(leadersRes, 'DataContext leaders');
         setLeaders(data);
       }
+    } catch (error) {
+      handleEndpointError('leaders', error);
+    }
 
+    try {
       // Fetch gallery images
       const galleryRes = await apiFetch(apiUrl('/api/gallery'), {}, 'DataContext');
-      if (galleryRes.ok) {
+      if (!galleryRes.ok) {
+        requestFailed = true;
+      } else {
         const data = await safeJson(galleryRes, 'DataContext gallery');
         setGalleryImages(data);
       }
-      
+    } catch (error) {
+      handleEndpointError('gallery images', error);
+    }
+
+    try {
       // Fetch admission settings
       const admissionRes = await apiFetch(apiUrl('/api/admission-settings'), {}, 'DataContext');
-      if (admissionRes.ok) {
+      if (!admissionRes.ok) {
+        requestFailed = true;
+      } else {
         const data = await safeJson(admissionRes, 'DataContext admission settings');
         setAdmissionSettings(data);
       }
     } catch (error) {
-      console.warn('Could not load data from dynamic API endpoints, using fully integrated fallback data.', error);
+      handleEndpointError('admission settings', error);
     } finally {
+      setBackendOffline(requestFailed);
       setIsLoading(false);
     }
   };
@@ -375,7 +424,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   return (
-    <DataContext.Provider value={{ settings, founder, manager, notices, leaders, galleryImages, admissionSettings, isLoading, refreshData }}>
+    <DataContext.Provider value={{ settings, founder, manager, notices, leaders, galleryImages, admissionSettings, isLoading, backendOffline, refreshData }}>
       {children}
     </DataContext.Provider>
   );

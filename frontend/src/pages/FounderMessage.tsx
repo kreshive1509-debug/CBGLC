@@ -4,10 +4,11 @@ import { Scale, Award, BookOpen, Quote, Shield, Lightbulb, GraduationCap } from 
 import { useData } from '../context/DataContext';
 import { useAdmissionModal } from '../context/AdmissionContext';
 import { FOUNDER_INFO } from '../constants/data';
+import { CmsImage } from '../components/CmsImage';
 
 export const FounderMessage: React.FC = () => {
   const { openModal } = useAdmissionModal();
-  const { settings, founder } = useData();
+  const { settings, founder, backendOffline } = useData();
 
   const visionPillars = [
     {
@@ -69,11 +70,13 @@ export const FounderMessage: React.FC = () => {
               <div className="relative group w-full max-w-[320px]">
                 <div className="absolute -inset-4 border-2 border-dashed border-gold/30 rounded-3xl transform -rotate-2 group-hover:rotate-0 transition-transform duration-500 pointer-events-none" />
                 <div className="relative overflow-hidden rounded-2xl shadow-xl aspect-3/4 bg-slate-100">
-                  <img
-                    src={founder.googleDrivePhotoUrl || FOUNDER_INFO.image}
+                  <CmsImage
+                    src={founder.googleDrivePhotoUrl || ''}
                     alt={founder.name}
                     className="w-full h-full object-cover filter contrast-102 hover:scale-103 transition-transform duration-500"
-                    referrerPolicy="no-referrer"
+                    containerClassName="relative overflow-hidden w-full h-full bg-slate-100"
+                    placeholderText="Image unavailable"
+                    isOffline={backendOffline}
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent opacity-60" />
                 </div>
