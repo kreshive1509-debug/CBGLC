@@ -278,7 +278,7 @@ export const Home: React.FC = () => {
             initial={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.45 }}
-            className="fixed inset-0 z-[100] flex items-center justify-center overflow-hidden"
+            className="fixed inset-0 z-[9999] flex items-center justify-center overflow-hidden"
           >
             <div
               className="absolute inset-0 bg-cover bg-center"
