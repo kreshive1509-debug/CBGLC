@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   Scale,
   Building,
@@ -21,14 +21,15 @@ import {
   Clock,
   ShieldAlert,
   Download,
-  Calendar
+  Calendar,
+  Linkedin,
+  Globe
 } from 'lucide-react';
 import { useAdmissionModal } from '../context/AdmissionContext';
 import { useData } from '../context/DataContext';
 import { SEOHelper } from '../components/SEOHelper';
 import { BreakingNewsTicker } from '../components/BreakingNewsTicker';
 import { SectionHeading } from '../components/SectionHeading';
-import { Counter } from '../components/Counter';
 import { CmsImage } from '../components/CmsImage';
 import { apiUrl } from '../utils/api';
 import { apiFetch, safeJson } from '../utils/http';
@@ -42,8 +43,7 @@ import {
   FACILITIES,
   FOUNDER_INFO,
   MANAGER_INFO,
-  NOTICES,
-  STATS
+  NOTICES
 } from '../constants/data';
 
 // Helper to map string icon names to Lucide elements
@@ -74,8 +74,9 @@ const formatSeats = (seats: unknown) => {
 
 export const Home: React.FC = () => {
   const { openModal } = useAdmissionModal();
-  const { settings, founder, manager, notices, admissionSettings, galleryImages, backendOffline } = useData();
+  const { settings, founder, manager, notices, leaders, admissionSettings, galleryImages, backendOffline, isLoading, faculties, documents } = useData();
   const [visitorCount, setVisitorCount] = useState<number | null>(null);
+  const [showSplash, setShowSplash] = useState(true);
 
   useEffect(() => {
     let isMounted = true;
@@ -168,6 +169,64 @@ export const Home: React.FC = () => {
 
   const previewImages = Array.isArray(galleryImages) ? galleryImages.slice(0, 6) : [];
 
+  const storedSplashConfig = (() => {
+    if (typeof window === 'undefined') return {};
+    try {
+      return JSON.parse(window.localStorage.getItem('cbgl-splash-config') || '{}');
+    } catch {
+      return {};
+    }
+  })();
+
+  const splashEnabled = Boolean((settings as any).splashEnabled ?? storedSplashConfig.splashEnabled ?? true);
+  const splashBackgroundUrl = (settings as any).splashBackgroundImageUrl || storedSplashConfig.splashBackgroundImageUrl || settings.heroBackgroundUrl || '';
+  const splashLogoUrl = (settings as any).splashLogoUrl || storedSplashConfig.splashLogoUrl || settings.logoUrl || '';
+  const splashHeading = (settings as any).splashHeading || storedSplashConfig.splashHeading || settings.collegeName || 'Chandra Bhanu Gupta Law College';
+  const splashSubheading = (settings as any).splashSubheading || storedSplashConfig.splashSubheading || settings.tagline || 'Shaping ethical legal minds with academic distinction and professional excellence.';
+  const splashLoadingText = (settings as any).splashLoadingText || storedSplashConfig.splashLoadingText || 'Preparing your campus experience';
+  const splashOverlayColor = (settings as any).splashOverlayColor || storedSplashConfig.splashOverlayColor || 'rgba(2, 6, 23, 0.78)';
+  const splashOverlayOpacity = Number((settings as any).splashOverlayOpacity ?? storedSplashConfig.splashOverlayOpacity ?? 0.78);
+  const splashMaxDuration = Math.min(Math.max(Number((settings as any).splashMaxDuration ?? storedSplashConfig.splashMaxDuration ?? 5000), 1000), 5000);
+
+  useEffect(() => {
+    if (!splashEnabled) {
+      setShowSplash(false);
+      return;
+    }
+
+    if (!isLoading) {
+      setShowSplash(false);
+      return;
+    }
+
+    const timeout = window.setTimeout(() => setShowSplash(false), splashMaxDuration);
+    return () => window.clearTimeout(timeout);
+  }, [isLoading, splashEnabled, splashMaxDuration]);
+
+  const facultyMembers = React.useMemo(() => {
+    const visibleFaculty = (Array.isArray(faculties) ? faculties : [])
+      .filter((faculty: any) => faculty?.isVisible !== false)
+      .sort((a: any, b: any) => {
+        const aOrder = Number(a?.displayOrder ?? 0);
+        const bOrder = Number(b?.displayOrder ?? 0);
+        return aOrder - bOrder || new Date(a?.createdAt || 0).getTime() - new Date(b?.createdAt || 0).getTime();
+      })
+      .map((faculty: any) => ({
+        ...faculty,
+        fullName: faculty?.fullName || faculty?.name || 'Faculty Member',
+        designation: faculty?.designation || 'Faculty',
+        department: faculty?.department || 'Department',
+        description: faculty?.description || 'Dedicated academic leader committed to excellence in legal education.',
+        photoUrl: faculty?.photoUrl || faculty?.imageUrl || '',
+        expertise: Array.isArray(faculty?.expertise) ? faculty.expertise : [],
+        email: faculty?.email || '',
+        linkedin: faculty?.linkedin || '',
+        website: faculty?.website || '',
+      }));
+
+    return visibleFaculty;
+  }, [faculties]);
+
   // Use admissionSettings if available, otherwise fallback to settings
   const currentAdmissionStatus = admissionSettings?.admissionStatus || settings.admissionStatus;
   const currentAcademicSession = admissionSettings?.academicSession || settings.academicSession;
@@ -212,6 +271,54 @@ export const Home: React.FC = () => {
         }}
       />
       
+      <AnimatePresence>
+        {showSplash && splashEnabled && (
+          <motion.div
+            initial={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.45 }}
+            className="fixed inset-0 z-[100] flex items-center justify-center overflow-hidden"
+          >
+            <div
+              className="absolute inset-0 bg-cover bg-center"
+              style={{
+                backgroundImage: splashBackgroundUrl ? `url(${splashBackgroundUrl})` : undefined,
+              }}
+            />
+            <div
+              className="absolute inset-0"
+              style={{ backgroundColor: splashOverlayColor, opacity: splashOverlayOpacity }}
+            />
+            <div className="relative z-10 mx-4 w-full max-w-xl rounded-[2rem] border border-white/20 bg-white/10 px-8 py-10 text-center shadow-2xl backdrop-blur-xl">
+              <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-white/20 ring-1 ring-white/30 shadow-lg">
+                {splashLogoUrl ? (
+                  <img src={splashLogoUrl} alt="College logo" className="h-12 w-12 object-contain" referrerPolicy="no-referrer" />
+                ) : (
+                  <GraduationCap className="h-10 w-10 text-white" />
+                )}
+              </div>
+              <h1 className="mt-6 font-serif text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+                {splashHeading}
+              </h1>
+              <p className="mt-3 text-sm sm:text-base text-slate-200">
+                {splashSubheading}
+              </p>
+              <div className="mt-8 h-2 overflow-hidden rounded-full bg-white/20">
+                <motion.div
+                  initial={{ width: '0%' }}
+                  animate={{ width: '100%' }}
+                  transition={{ duration: splashMaxDuration / 1000, ease: 'easeInOut' }}
+                  className="h-full rounded-full bg-gradient-to-r from-gold via-white to-gold"
+                />
+              </div>
+              <p className="mt-4 text-xs font-semibold uppercase tracking-[0.3em] text-slate-200">
+                {splashLoadingText}
+              </p>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* ================================================== */}
       {/* HERO SECTION */}
       {/* ================================================== */}
@@ -925,31 +1032,171 @@ export const Home: React.FC = () => {
       </section>
 
       {/* ================================================== */}
-      {/* STATISTICS AREA */}
+      {/* DOCUMENT CENTER */}
       {/* ================================================== */}
-      <section className="relative py-16 bg-primary text-white overflow-hidden">
-        {/* Background Overlay pattern */}
-        <div className="absolute inset-0 bg-gradient-to-r from-primary-dark to-primary opacity-95" />
-        
-        <div className="max-w-7xl mx-auto px-4 relative z-10">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-4 text-center">
-            {STATS.map((stat, i) => (
-              <motion.div
-                key={stat.label}
-                initial={{ opacity: 0, scale: 0.9 }}
-                whileInView={{ opacity: 1, scale: 1 }}
+      <section className="py-20 bg-slate-50 px-4 border-t border-slate-100">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-12">
+            <SectionHeading
+              badge="Resource Center"
+              title="Important Documents & Forms"
+              align="left"
+            />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {documents
+              .filter((d: any) => d.isVisible !== false && d.status === 'Published')
+              .sort((a: any, b: any) => {
+                const priorityOrder: Record<string, number> = { High: 1, Medium: 2, Low: 3 };
+                const aPriority = priorityOrder[a.priority] || 2;
+                const bPriority = priorityOrder[b.priority] || 2;
+                if (aPriority !== bPriority) return aPriority - bPriority;
+                
+                const aOrder = Number(a?.displayOrder ?? 0);
+                const bOrder = Number(b?.displayOrder ?? 0);
+                return aOrder - bOrder || new Date(b?.publishDate || 0).getTime() - new Date(a?.publishDate || 0).getTime();
+              })
+              .slice(0, 6)
+              .map((doc, i) => (
+                <motion.div
+                  key={doc._id}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.4, delay: i * 0.1 }}
+                  className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between"
+                >
+                  <div>
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-md bg-blue-50 text-blue-700">
+                        {doc.category}
+                      </span>
+                      {doc.priority === 'High' && (
+                        <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-md bg-red-50 text-red-600 animate-pulse">
+                          Urgent
+                        </span>
+                      )}
+                    </div>
+                    <h3 className="font-serif text-lg font-bold text-slate-800 mb-2">{doc.title}</h3>
+                    {doc.description && (
+                      <p className="text-xs text-slate-500 leading-relaxed mb-4 line-clamp-2">
+                        {doc.description}
+                      </p>
+                    )}
+                  </div>
+                  
+                  <a
+                    href={doc.link}
+                    target={doc.openInNewTab ? "_blank" : "_self"}
+                    rel="noreferrer"
+                    className="mt-4 inline-flex items-center justify-center gap-2 w-full bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 text-[11px] font-bold uppercase tracking-widest py-2.5 px-4 rounded-xl transition-colors"
+                  >
+                    <span>{doc.buttonText || 'Open Document'}</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </a>
+                </motion.div>
+              ))}
+              
+            {documents.filter((d: any) => d.isVisible !== false && d.status === 'Published').length === 0 && (
+              <div className="col-span-full py-10 text-center bg-white rounded-2xl border border-dashed border-slate-200">
+                <BookOpen className="w-8 h-8 text-slate-300 mx-auto mb-3" />
+                <p className="text-slate-500 text-sm font-medium">No public documents available at the moment.</p>
+              </div>
+            )}
+          </div>
+        </div>
+      </section>
+
+      {/* ================================================== */}
+      {/* MEET OUR FACULTIES */}
+      {/* ================================================== */}
+      <section className="bg-slate-50 py-20 px-4">
+        <div className="mx-auto max-w-7xl">
+          <SectionHeading
+            badge="Academic Excellence"
+            title="Meet Our Faculties"
+            subtitle="Meet the distinguished academicians and legal professionals shaping the future of law education."
+          />
+
+          <div className="mt-12 grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-4">
+            {facultyMembers.length > 0 ? facultyMembers.map((faculty: any, index: number) => (
+              <motion.article
+                key={faculty._id || faculty.fullName || index}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: i * 0.1 }}
-                className="flex flex-col items-center"
+                transition={{ duration: 0.45, delay: index * 0.05 }}
+                whileHover={{ y: -6, scale: 1.01 }}
+                className="overflow-hidden rounded-[1.75rem] border border-slate-200 bg-white shadow-[0_20px_60px_-24px_rgba(15,23,42,0.25)]"
               >
-                <span className="font-serif text-3xl sm:text-4xl md:text-5xl font-extrabold text-gold tracking-tight">
-                  <Counter end={stat.value} />
-                </span>
-                <span className="text-[10px] sm:text-xs uppercase font-semibold text-slate-200 tracking-wider mt-2.5 max-w-[150px]">
-                  {stat.label}
-                </span>
-              </motion.div>
-            ))}
+                <div className="relative h-64 overflow-hidden bg-slate-100">
+                  <CmsImage
+                    src={faculty.photoUrl || ''}
+                    alt={faculty.fullName}
+                    className="h-full w-full object-cover transition-transform duration-700 hover:scale-105"
+                    containerClassName="relative h-full w-full bg-slate-100"
+                    placeholderText="Faculty information is currently unavailable."
+                    isOffline={backendOffline || !faculty.photoUrl}
+                  />
+                </div>
+                <div className="space-y-4 p-6">
+                  <div className="space-y-1">
+                    <h3 className="font-serif text-xl font-semibold text-slate-900">{faculty.fullName}</h3>
+                    <p className="text-xs font-bold uppercase tracking-[0.3em] text-gold">{faculty.designation}</p>
+                  </div>
+                  <div className="space-y-2 text-sm text-slate-600">
+                    <div className="flex items-center gap-2">
+                      <GraduationCap className="h-4 w-4 text-primary" />
+                      <span>{faculty.qualification || faculty.department || 'Faculty Member'}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <BookOpen className="h-4 w-4 text-primary" />
+                      <span>{faculty.department || 'Department'}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Clock className="h-4 w-4 text-primary" />
+                      <span>{faculty.experience || 'Experience details available on request'}</span>
+                    </div>
+                  </div>
+                  <p className="text-sm leading-relaxed text-slate-600">{faculty.description}</p>
+                  <div className="flex flex-wrap gap-2">
+                    {faculty.expertise.slice(0, 3).map((tag: string, tagIndex: number) => (
+                      <span key={`${faculty.fullName}-${tag}-${tagIndex}`} className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.24em] text-slate-600">
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                  <div className="flex flex-wrap gap-2 pt-2">
+                    {faculty.email ? (
+                      <a href={`mailto:${faculty.email}`} className="inline-flex items-center gap-1 rounded-full border border-slate-200 px-3 py-1.5 text-[11px] font-semibold text-slate-700 transition-colors hover:bg-slate-100">
+                        <Mail className="h-3.5 w-3.5" /> Email
+                      </a>
+                    ) : null}
+                    {faculty.linkedin ? (
+                      <a href={faculty.linkedin} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 rounded-full border border-slate-200 px-3 py-1.5 text-[11px] font-semibold text-slate-700 transition-colors hover:bg-slate-100">
+                        <Linkedin className="h-3.5 w-3.5" /> LinkedIn
+                      </a>
+                    ) : null}
+                    {faculty.website ? (
+                      <a href={faculty.website} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 rounded-full border border-slate-200 px-3 py-1.5 text-[11px] font-semibold text-slate-700 transition-colors hover:bg-slate-100">
+                        <Globe className="h-3.5 w-3.5" /> Website
+                      </a>
+                    ) : null}
+                  </div>
+                </div>
+              </motion.article>
+            )) : (
+              <div className="col-span-full flex min-h-[18rem] items-center justify-center rounded-[1.75rem] border border-dashed border-slate-300 bg-white p-10 text-center shadow-sm">
+                <div className="max-w-md space-y-4">
+                  <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-slate-100 text-slate-500">
+                    <GraduationCap className="h-8 w-8" />
+                  </div>
+                  <h3 className="font-serif text-2xl font-semibold text-slate-800">Faculty information is currently unavailable.</h3>
+                  <p className="text-sm leading-relaxed text-slate-500">The academic profiles will appear here as soon as the faculty data is available.</p>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </section>

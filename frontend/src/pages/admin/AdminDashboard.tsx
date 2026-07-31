@@ -30,6 +30,9 @@ import {
 import { AdmissionManagement } from './AdmissionManagement';
 import { GalleryManagement } from './GalleryManagement';
 import { LeadershipManagement } from './LeadershipManagement';
+import { FacultyManagementTab } from './FacultyManagementTab';
+import { DocumentManagementTab } from './DocumentManagementTab';
+import { BookOpen } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { apiUrl } from '../../utils/api';
 import { formatAdminTimestamp, formatIndianNumber } from '../../utils/formatters';
@@ -40,8 +43,8 @@ export function AdminDashboard() {
   const { settings, founder, manager, notices, isLoading: isDataContextLoading, refreshData } = useData();
   const navigate = useNavigate();
 
-  // Navigation tabs: 'overview' | 'notices' | 'leadership' | 'leaders' | 'gallery' | 'settings' | 'contact' | 'admission'
-  const [activeTab, setActiveTab] = useState<'overview' | 'notices' | 'leadership' | 'leaders' | 'gallery' | 'settings' | 'contact' | 'admission' | 'enquiries'>('overview');
+  // Navigation tabs: 'overview' | 'notices' | 'leadership' | 'leaders' | 'gallery' | 'settings' | 'contact' | 'admission' | 'enquiries' | 'faculties' | 'documents'
+  const [activeTab, setActiveTab] = useState<'overview' | 'notices' | 'leadership' | 'leaders' | 'gallery' | 'settings' | 'contact' | 'admission' | 'enquiries' | 'faculties' | 'documents'>('overview');
 
   // Loading States
   const [actionLoading, setActionLoading] = useState(false);
@@ -462,12 +465,14 @@ export function AdminDashboard() {
         </div>
 
         {/* Navigation list */}
-        <nav className="flex-1 px-4 py-6 space-y-1.5">
+        <nav className="flex-1 px-4 py-6 space-y-1.5 overflow-y-auto">
           {[
             { id: 'overview', label: 'Dashboard Overview', icon: Layers },
             { id: 'notices', label: 'Notices Board (CRUD)', icon: Bell },
             { id: 'leadership', label: 'Founder & Manager Message', icon: Users },
             { id: 'leaders', label: 'Team Leadership Records', icon: Users },
+            { id: 'faculties', label: 'Faculty Management', icon: Users },
+            { id: 'documents', label: 'Document Center', icon: BookOpen },
             { id: 'gallery', label: 'Gallery CMS', icon: Image },
             { id: 'settings', label: 'Website Settings', icon: SettingsIcon },
             { id: 'contact', label: 'Contact Helpdesk Details', icon: Phone },
@@ -524,6 +529,8 @@ export function AdminDashboard() {
               {activeTab === 'notices' && 'Bulletin & Notices Board'}
               {activeTab === 'leadership' && 'Leaders Editorial Messages'}
               {activeTab === 'leaders' && 'Team Leadership Records'}
+              {activeTab === 'faculties' && 'Faculty Management'}
+              {activeTab === 'documents' && 'Document Center Management'}
               {activeTab === 'gallery' && 'Gallery Content Management'}
               {activeTab === 'settings' && 'Core Institutional Profile'}
               {activeTab === 'contact' && 'Support Desk & Social Outlets'}
@@ -1093,6 +1100,14 @@ export function AdminDashboard() {
 
           {activeTab === 'admission' && (
             <AdmissionManagement />
+          )}
+
+          {activeTab === 'faculties' && (
+            <FacultyManagementTab />
+          )}
+
+          {activeTab === 'documents' && (
+            <DocumentManagementTab />
           )}
 
           {/* ==================================== WEBSITE SETTINGS TAB ==================================== */}

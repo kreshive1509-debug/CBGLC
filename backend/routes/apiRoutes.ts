@@ -64,6 +64,8 @@ import {
 } from '../controllers/cmsCompatController';
 import admissionRoutes from './admission.routes';
 import admissionSettingsRoutes from './admissionSettings.routes';
+import facultyRoutes from './facultyRoutes';
+import documentRoutes from './documentRoutes';
 import { verifyFirebaseToken } from '../middlewares/authMiddleware';
 import { isMongoConnected } from '../config/db';
 
@@ -165,5 +167,7 @@ router.patch('/leaders/:id/publish', verifyFirebaseToken, toggleLeaderPublish);
 router.patch('/leaders/:id/featured', verifyFirebaseToken, toggleLeaderFeatured);
 
 router.use('/enquiries', verifyFirebaseToken, admissionRoutes);
+router.use('/faculties', facultyRoutes);
+router.use('/documents', documentRoutes);
 
 export default router;

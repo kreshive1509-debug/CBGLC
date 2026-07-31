@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useData } from '../../context/DataContext';
 import { useAdminAuth } from '../../context/AdminAuthContext';
-import { Save, RotateCcw, Globe, Layout, Image, Phone, Mail, Share2, MapPin, GraduationCap, FileText, Search, ArrowLeft, LogOut } from 'lucide-react';
+import { Save, RotateCcw, Globe, Layout, Image, Phone, Mail, Share2, MapPin, GraduationCap, FileText, Search, ArrowLeft, LogOut, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
 import { signalCmsUpdated } from '../../utils/cmsSync';
@@ -33,6 +33,7 @@ export function WebsiteSettingsPage() {
     { id: 'Admission', icon: GraduationCap },
     { id: 'Brochure', icon: FileText },
     { id: 'Footer', icon: Layout },
+    { id: 'Splash', icon: Sparkles },
     { id: 'Google Sheets', icon: FileText },
     { id: 'SEO', icon: Search },
   ];
@@ -51,14 +52,39 @@ export function WebsiteSettingsPage() {
         return;
       }
 
-      const response = await apiFetch(apiUrl('/api/settings'), {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${authToken}`
-        },
-        body: JSON.stringify(formData)
-      }, 'WebsiteSettingsPage');
+      let response;
+      if (activeTab === 'Splash') {
+        const splashPayload = {
+          enabled: Boolean(formData.splashEnabled),
+          backgroundImage: String(formData.splashBackgroundImageUrl || '').trim(),
+          logo: String(formData.splashLogoUrl || '').trim(),
+          heading: String(formData.splashHeading || '').trim(),
+          subheading: String(formData.splashSubheading || '').trim(),
+          loadingText: String(formData.splashLoadingText || '').trim(),
+          overlayColor: String(formData.splashOverlayColor || '').trim(),
+          overlayOpacity: Number(formData.splashOverlayOpacity ?? 0.78),
+          maxDuration: Number(formData.splashMaxDuration ?? 5000),
+        };
+
+        response = await apiFetch(apiUrl('/api/faculties/splash-screen'), {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${authToken}`
+          },
+          body: JSON.stringify(splashPayload)
+        }, 'WebsiteSettingsPage Splash');
+      } else {
+        response = await apiFetch(apiUrl('/api/settings'), {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${authToken}`
+          },
+          body: JSON.stringify(formData)
+        }, 'WebsiteSettingsPage Settings');
+      }
+
       if (response.ok) {
         alert('Settings updated successfully!');
         refreshData();
@@ -321,6 +347,20 @@ export function WebsiteSettingsPage() {
                     <div className="md:col-span-2">{renderField('Footer Description', 'footerText', 'textarea')}</div>
                     <div className="md:col-span-2">{renderField('Copyright Text', 'copyrightText')}</div>
                     {renderField('Designed & Developed By', 'designedBy')}
+                  </>
+                )}
+
+                {activeTab === 'Splash' && (
+                  <>
+                    {renderField('Enable Splash Screen', 'splashEnabled', 'checkbox')}
+                    {renderField('Splash Background Image URL', 'splashBackgroundImageUrl')}
+                    {renderField('Splash Logo URL', 'splashLogoUrl')}
+                    {renderField('Splash Heading', 'splashHeading')}
+                    {renderField('Splash Subheading', 'splashSubheading')}
+                    {renderField('Splash Loading Text', 'splashLoadingText')}
+                    {renderField('Overlay Color', 'splashOverlayColor')}
+                    {renderField('Overlay Opacity', 'splashOverlayOpacity')}
+                    {renderField('Maximum Duration (ms)', 'splashMaxDuration')}
                   </>
                 )}
 

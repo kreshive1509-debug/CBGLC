@@ -87,6 +87,16 @@ export interface WebsiteSettings {
   footerQuickLinks: Array<{ id?: string; label: string; path: string; displayOrder?: number }>;
   footerUsefulLinks: Array<{ id?: string; label: string; path: string; displayOrder?: number }>;
 
+  splashEnabled?: boolean;
+  splashBackgroundImageUrl?: string;
+  splashLogoUrl?: string;
+  splashHeading?: string;
+  splashSubheading?: string;
+  splashLoadingText?: string;
+  splashOverlayColor?: string;
+  splashOverlayOpacity?: number;
+  splashMaxDuration?: number;
+
   metaTitle: string;
   metaDescription: string;
   metaKeywords: string;
@@ -119,6 +129,8 @@ interface DataContextType {
   notices: any[];
   leaders: any[];
   galleryImages: any[];
+  faculties: any[];
+  documents: any[];
   admissionSettings: AdmissionSettings | null;
   isLoading: boolean;
   backendOffline: boolean;
@@ -229,6 +241,15 @@ const fallbackSettings: WebsiteSettings = {
     { label: 'Admissions', path: '/admission-enquiry' },
     { label: 'FAQs', path: '/faq' }
   ],
+  splashEnabled: true,
+  splashBackgroundImageUrl: '',
+  splashLogoUrl: '',
+  splashHeading: 'Chandra Bhanu Gupta Law College',
+  splashSubheading: 'Shaping ethical legal minds with academic distinction and professional excellence.',
+  splashLoadingText: 'Preparing your campus experience',
+  splashOverlayColor: 'rgba(2, 6, 23, 0.78)',
+  splashOverlayOpacity: 0.78,
+  splashMaxDuration: 5000,
   metaTitle: "Chandra Bhanu Gupta Law College | Best Law College in Lucknow",
   metaDescription: "Chandra Bhanu Gupta Law College, Lucknow is affiliated to University of Lucknow and approved by Bar Council of India. Offering LL.B. courses.",
   metaKeywords: "Law College, Lucknow, LLB, legal education, CBG Law College",
@@ -291,6 +312,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [notices, setNotices] = useState<any[]>(fallbackNotices);
   const [leaders, setLeaders] = useState<any[]>([]);
   const [galleryImages, setGalleryImages] = useState<any[]>([]);
+  const [faculties, setFaculties] = useState<any[]>([]);
+  const [documents, setDocuments] = useState<any[]>([]);
   const [admissionSettings, setAdmissionSettings] = useState<AdmissionSettings | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [backendOffline, setBackendOffline] = useState(false);
@@ -307,12 +330,43 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       // Fetch settings
       const settingsRes = await apiFetch(apiUrl('/api/settings'), {}, 'DataContext');
+      let settingsData = {};
       if (!settingsRes.ok) {
         requestFailed = true;
       } else {
-        const data = await safeJson(settingsRes, 'DataContext settings');
-        setSettings({ ...fallbackSettings, ...normalizeSettingsData(data) });
+        settingsData = await safeJson(settingsRes, 'DataContext settings');
       }
+
+      // Fetch splash screen configuration and merge it
+      let splashData: any = {};
+      try {
+        const splashRes = await apiFetch(apiUrl('/api/faculties/splash-screen'), { cache: 'no-store' }, 'DataContext');
+        if (splashRes.ok) {
+          const resJson = await safeJson(splashRes, 'DataContext splash');
+          if (resJson && resJson.splash) {
+            const s = resJson.splash;
+            splashData = {
+              splashEnabled: s.enabled,
+              splashBackgroundImageUrl: s.backgroundImage,
+              splashLogoUrl: s.logo,
+              splashHeading: s.heading,
+              splashSubheading: s.subheading,
+              splashLoadingText: s.loadingText,
+              splashOverlayColor: s.overlayColor,
+              splashOverlayOpacity: s.overlayOpacity,
+              splashMaxDuration: s.maxDuration,
+            };
+          }
+        }
+      } catch (err) {
+        console.warn("Could not load splash screen config", err);
+      }
+
+      setSettings({
+        ...fallbackSettings,
+        ...normalizeSettingsData(settingsData),
+        ...splashData
+      });
     } catch (error) {
       handleEndpointError('settings', error);
     }
@@ -383,6 +437,32 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     try {
+      // Fetch faculties
+      const facultiesRes = await apiFetch(apiUrl('/api/faculties'), { cache: 'no-store' }, 'DataContext');
+      if (!facultiesRes.ok) {
+        requestFailed = true;
+      } else {
+        const data = await safeJson(facultiesRes, 'DataContext faculties');
+        setFaculties(data.faculties || []);
+      }
+    } catch (error) {
+      handleEndpointError('faculties', error);
+    }
+
+    try {
+      // Fetch documents
+      const documentsRes = await apiFetch(apiUrl('/api/documents'), { cache: 'no-store' }, 'DataContext');
+      if (!documentsRes.ok) {
+        requestFailed = true;
+      } else {
+        const data = await safeJson(documentsRes, 'DataContext documents');
+        setDocuments(data.documents || []);
+      }
+    } catch (error) {
+      handleEndpointError('documents', error);
+    }
+
+    try {
       // Fetch admission settings
       const admissionRes = await apiFetch(apiUrl('/api/admission-settings'), {}, 'DataContext');
       if (!admissionRes.ok) {
@@ -424,7 +504,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   return (
-    <DataContext.Provider value={{ settings, founder, manager, notices, leaders, galleryImages, admissionSettings, isLoading, backendOffline, refreshData }}>
+    <DataContext.Provider value={{ settings, founder, manager, notices, leaders, galleryImages, faculties, documents, admissionSettings, isLoading, backendOffline, refreshData }}>
       {children}
     </DataContext.Provider>
   );
