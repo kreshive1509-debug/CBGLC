@@ -31,6 +31,7 @@ import { SEOHelper } from '../components/SEOHelper';
 import { BreakingNewsTicker } from '../components/BreakingNewsTicker';
 import { SectionHeading } from '../components/SectionHeading';
 import { CmsImage } from '../components/CmsImage';
+import { Counter } from '../components/Counter';
 import { apiUrl } from '../utils/api';
 import { apiFetch, safeJson } from '../utils/http';
 import { formatIndianNumber } from '../utils/formatters';
