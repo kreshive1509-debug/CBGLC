@@ -16,7 +16,7 @@ export function FacultyManagementTab() {
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
-    fullName: '',
+    name: '',
     designation: '',
     department: '',
     qualification: '',
@@ -57,7 +57,7 @@ export function FacultyManagementTab() {
     } else {
       setEditingFaculty(null);
       setFormData({
-        fullName: '',
+        name: '',
         designation: '',
         department: '',
         qualification: '',
@@ -193,13 +193,13 @@ export function FacultyManagementTab() {
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-full bg-slate-200 overflow-hidden shrink-0">
                           {faculty.photoUrl ? (
-                            <img src={faculty.photoUrl} alt={faculty.fullName} className="w-full h-full object-cover" />
+                            <img src={faculty.photoUrl} alt={faculty.name} className="w-full h-full object-cover" />
                           ) : (
                             <div className="w-full h-full flex items-center justify-center text-slate-400"><Users className="w-5 h-5" /></div>
                           )}
                         </div>
                         <div>
-                          <p className="font-bold text-slate-800">{faculty.fullName}</p>
+                          <p className="font-bold text-slate-800">{faculty.name}</p>
                           <p className="text-[10px] text-slate-500 line-clamp-1">{faculty.qualification}</p>
                         </div>
                       </div>
@@ -264,7 +264,7 @@ export function FacultyManagementTab() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
                   <label className="text-[11px] uppercase tracking-wider text-slate-500">Full Name</label>
-                  <input type="text" required className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg" value={formData.fullName} onChange={e => setFormData({...formData, fullName: e.target.value})} />
+                  <input type="text" required className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} />
                 </div>
                 <div className="space-y-1">
                   <label className="text-[11px] uppercase tracking-wider text-slate-500">Designation</label>
